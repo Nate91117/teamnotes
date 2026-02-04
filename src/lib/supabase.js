@@ -1,20 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+const supabaseUrl = 'https://zvjwbyujkajtvqbcisco.supabase.co'
+const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp2andieXVqa2FqdHZxYmNpc2NvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk2NTUyMDgsImV4cCI6MjA4NTIzMTIwOH0.7QPHmgnrmKyz_k2ZQFGqnu38eXK2fuC0hnlq7diKv2s'
 
-console.log('Supabase URL:', supabaseUrl ? supabaseUrl.substring(0, 30) + '...' : 'MISSING')
-console.log('Supabase Key:', supabaseAnonKey ? 'Present (' + supabaseAnonKey.length + ' chars)' : 'MISSING')
-
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.error('Missing Supabase environment variables. Please check your .env file.')
-}
-
-export const supabase = createClient(supabaseUrl || '', supabaseAnonKey || '')
-
-// Test query on load
-supabase.from('profiles').select('count').limit(1).then(result => {
-  console.log('Supabase test query result:', result)
-}).catch(err => {
-  console.error('Supabase test query error:', err)
-})
+export const supabase = createClient(supabaseUrl, supabaseAnonKey)
