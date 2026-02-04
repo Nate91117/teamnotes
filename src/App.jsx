@@ -8,6 +8,7 @@ import Dashboard from './pages/Dashboard'
 import MyNotes from './pages/MyNotes'
 import MyTasks from './pages/MyTasks'
 import TeamSettings from './pages/TeamSettings'
+import Settings from './pages/Settings'
 
 function App() {
   return (
@@ -34,6 +35,11 @@ function App() {
           <Route path="/team" element={
             <ProtectedRoute>
               <TeamSettings />
+            </ProtectedRoute>
+          } />
+          <Route path="/settings" element={
+            <ProtectedRoute>
+              <Settings />
             </ProtectedRoute>
           } />
           <Route path="*" element={<Navigate to="/dashboard" replace />} />

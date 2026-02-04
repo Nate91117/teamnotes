@@ -96,8 +96,20 @@ export function AuthProvider({ children }) {
     return { data, error }
   }
 
-  async function changePassword(newPassword) {
-    if (!user) return { error: 'Not authenticated' }
+  async function changePassword(currentPassword, newPassword) {
+    if (!user) return { error: { message: 'Not authenticated' } }
+
+    // Verify current password
+    const { data: verified, error: verifyError } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('id', user.id)
+      .eq('password', currentPassword)
+      .single()
+
+    if (verifyError || !verified) {
+      return { error: { message: 'Current password is incorrect' } }
+    }
 
     const { data, error } = await supabase
       .from('profiles')
@@ -106,7 +118,40 @@ export function AuthProvider({ children }) {
       .select()
       .single()
 
-    return { data, error }
+    if (error) {
+      return { data: null, error: { message: 'Failed to update password' } }
+    }
+    return { data, error: null }
+  }
+
+  async function updateEmail(newEmail) {
+    if (!user) return { error: { message: 'Not authenticated' } }
+
+    // Check if email is already taken
+    const { data: existing } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('email', newEmail)
+      .neq('id', user.id)
+      .single()
+
+    if (existing) {
+      return { error: { message: 'This email is already in use' } }
+    }
+
+    const { data, error } = await supabase
+      .from('profiles')
+      .update({ email: newEmail })
+      .eq('id', user.id)
+      .select()
+      .single()
+
+    if (error) {
+      return { data: null, error: { message: 'Failed to update email' } }
+    }
+
+    setProfile(data)
+    return { data, error: null }
   }
 
   async function signUp(email, password, displayName) {
@@ -189,7 +234,8 @@ export function AuthProvider({ children }) {
     signUp,
     signOut,
     updateProfile,
-    changePassword
+    changePassword,
+    updateEmail
   }
 
   return (
