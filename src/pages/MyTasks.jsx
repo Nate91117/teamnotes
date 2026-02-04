@@ -14,8 +14,8 @@ export default function MyTasks() {
           <p className="text-gray-600 dark:text-gray-400 mb-4">
             You need to be part of a team to create tasks.
           </p>
-          <Link to="/team" className="text-primary-600 hover:text-primary-700 font-medium">
-            Go to Team Settings
+          <Link to="/dashboard" className="text-primary-600 hover:text-primary-700 font-medium">
+            Go to Dashboard
           </Link>
         </div>
       </Layout>

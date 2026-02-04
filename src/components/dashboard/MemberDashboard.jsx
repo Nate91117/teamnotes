@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 import { useTeam } from '../../contexts/TeamContext'
 import { useNotes } from '../../hooks/useNotes'
 import { useTasks } from '../../hooks/useTasks'
+import { usePersonalGoals } from '../../hooks/usePersonalGoals'
 import GoalCard from './GoalCard'
 import LoadingSpinner from '../common/LoadingSpinner'
 
@@ -9,8 +10,9 @@ export default function MemberDashboard() {
   const { goals, loading: goalsLoading } = useTeam()
   const { notes, loading: notesLoading } = useNotes()
   const { tasks, todoTasks, inProgressTasks, loading: tasksLoading } = useTasks()
+  const { activeGoals: activePersonalGoals, loading: personalGoalsLoading } = usePersonalGoals()
 
-  const loading = goalsLoading || notesLoading || tasksLoading
+  const loading = goalsLoading || notesLoading || tasksLoading || personalGoalsLoading
 
   const activeGoals = goals.filter(g => g.status === 'active')
   const recentNotes = notes.slice(0, 3)
@@ -27,7 +29,7 @@ export default function MemberDashboard() {
   return (
     <div className="space-y-8">
       {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="card">
           <div className="text-3xl font-bold text-primary-600">{notes.length}</div>
           <div className="text-gray-600 dark:text-gray-400">My Notes</div>
@@ -35,6 +37,10 @@ export default function MemberDashboard() {
         <div className="card">
           <div className="text-3xl font-bold text-yellow-600">{todoTasks.length + inProgressTasks.length}</div>
           <div className="text-gray-600 dark:text-gray-400">Active Tasks</div>
+        </div>
+        <div className="card">
+          <div className="text-3xl font-bold text-purple-600">{(activePersonalGoals || []).length}</div>
+          <div className="text-gray-600 dark:text-gray-400">My Goals</div>
         </div>
         <div className="card">
           <div className="text-3xl font-bold text-green-600">{activeGoals.length}</div>
@@ -117,6 +123,50 @@ export default function MemberDashboard() {
           )}
         </section>
       </div>
+
+      {/* Personal Goals */}
+      <section>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">My Goals</h3>
+          <Link to="/personal-goals" className="text-primary-600 hover:text-primary-700 text-sm font-medium">
+            View all
+          </Link>
+        </div>
+        {(activePersonalGoals || []).length === 0 ? (
+          <div className="card text-center text-gray-500 dark:text-gray-400 py-6">
+            No personal goals yet. <Link to="/personal-goals" className="text-primary-600">Create one</Link>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {(activePersonalGoals || []).slice(0, 4).map(goal => {
+              const totalTasks = (goal.linked_tasks || []).length
+              const doneTasks = (goal.linked_tasks || []).filter(t => t.status === 'done').length
+              const progressPercent = totalTasks > 0 ? Math.round((doneTasks / totalTasks) * 100) : 0
+              return (
+                <div key={goal.id} className="card py-4">
+                  <h4 className="font-medium text-gray-900 dark:text-white mb-2">{goal.title}</h4>
+                  {totalTasks > 0 && (
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-xs text-gray-500 dark:text-gray-400">
+                          {doneTasks}/{totalTasks} tasks
+                        </span>
+                        <span className="text-xs text-gray-500 dark:text-gray-400">{progressPercent}%</span>
+                      </div>
+                      <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-1.5">
+                        <div
+                          className={`h-1.5 rounded-full transition-all ${progressPercent === 100 ? 'bg-green-500' : 'bg-primary-500'}`}
+                          style={{ width: `${progressPercent}%` }}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </section>
 
       {/* Team Goals */}
       <section>

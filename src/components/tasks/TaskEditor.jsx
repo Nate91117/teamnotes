@@ -1,15 +1,18 @@
 import { useState, useEffect } from 'react'
 import { useTeam } from '../../contexts/TeamContext'
+import { usePersonalGoals } from '../../hooks/usePersonalGoals'
 import Button from '../common/Button'
 import Modal from '../common/Modal'
 
 export default function TaskEditor({ task, isOpen, onClose, onSave }) {
   const { goals } = useTeam()
+  const { activeGoals: activePersonalGoals } = usePersonalGoals()
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [notes, setNotes] = useState('')
   const [status, setStatus] = useState('todo')
   const [linkedGoalId, setLinkedGoalId] = useState('')
+  const [linkedPersonalGoalId, setLinkedPersonalGoalId] = useState('')
   const [sharedToDashboard, setSharedToDashboard] = useState(false)
   const [dueDate, setDueDate] = useState('')
   const [saving, setSaving] = useState(false)
@@ -23,6 +26,7 @@ export default function TaskEditor({ task, isOpen, onClose, onSave }) {
       setNotes(task.notes || '')
       setStatus(task.status)
       setLinkedGoalId(task.linked_goal_id || '')
+      setLinkedPersonalGoalId(task.linked_personal_goal_id || '')
       setSharedToDashboard(task.shared_to_dashboard || false)
       setDueDate(task.due_date ? task.due_date.split('T')[0] : '')
     } else {
@@ -31,6 +35,7 @@ export default function TaskEditor({ task, isOpen, onClose, onSave }) {
       setNotes('')
       setStatus('todo')
       setLinkedGoalId('')
+      setLinkedPersonalGoalId('')
       setSharedToDashboard(false)
       setDueDate('')
     }
@@ -47,6 +52,7 @@ export default function TaskEditor({ task, isOpen, onClose, onSave }) {
       notes,
       status,
       linked_goal_id: linkedGoalId || null,
+      linked_personal_goal_id: linkedPersonalGoalId || null,
       shared_to_dashboard: sharedToDashboard,
       due_date: dueDate ? new Date(dueDate).toISOString() : null
     })
@@ -128,7 +134,7 @@ export default function TaskEditor({ task, isOpen, onClose, onSave }) {
 
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            Link to Goal (optional)
+            Link to Team Goal (optional)
           </label>
           <select
             value={linkedGoalId}
@@ -139,6 +145,24 @@ export default function TaskEditor({ task, isOpen, onClose, onSave }) {
             {activeGoals.map(goal => (
               <option key={goal.id} value={goal.id}>
                 {goal.title}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            Link to Personal Goal (optional)
+          </label>
+          <select
+            value={linkedPersonalGoalId}
+            onChange={(e) => setLinkedPersonalGoalId(e.target.value)}
+            className="input"
+          >
+            <option value="">No linked personal goal</option>
+            {(activePersonalGoals || []).map(pg => (
+              <option key={pg.id} value={pg.id}>
+                {pg.title}
               </option>
             ))}
           </select>

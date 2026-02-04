@@ -8,6 +8,7 @@ import Dashboard from './pages/Dashboard'
 import MyNotes from './pages/MyNotes'
 import MyTasks from './pages/MyTasks'
 import TeamSettings from './pages/TeamSettings'
+import PersonalGoals from './pages/PersonalGoals'
 import Settings from './pages/Settings'
 
 function App() {
@@ -35,6 +36,11 @@ function App() {
           <Route path="/team" element={
             <ProtectedRoute>
               <TeamSettings />
+            </ProtectedRoute>
+          } />
+          <Route path="/personal-goals" element={
+            <ProtectedRoute>
+              <PersonalGoals />
             </ProtectedRoute>
           } />
           <Route path="/settings" element={

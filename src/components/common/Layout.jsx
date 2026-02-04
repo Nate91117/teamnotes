@@ -3,18 +3,19 @@ import { useAuth } from '../../contexts/AuthContext'
 import { useTeam } from '../../contexts/TeamContext'
 import Button from './Button'
 
-const navItems = [
-  { to: '/dashboard', label: 'Dashboard' },
-  { to: '/notes', label: 'My Notes' },
-  { to: '/tasks', label: 'My Tasks' },
-  { to: '/team', label: 'Team' }
-]
-
 export default function Layout({ children }) {
   const { profile, signOut } = useAuth()
   const { currentTeam, isLeader } = useTeam()
   const navigate = useNavigate()
   const location = useLocation()
+
+  const navItems = [
+    { to: '/dashboard', label: 'Dashboard' },
+    { to: '/notes', label: 'My Notes' },
+    { to: '/tasks', label: 'My Tasks' },
+    { to: '/personal-goals', label: 'My Goals' },
+    ...(isLeader ? [{ to: '/team', label: 'Team' }] : [])
+  ]
 
   const isSettingsActive = location.pathname === '/settings'
 

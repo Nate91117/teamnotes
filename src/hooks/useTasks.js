@@ -31,7 +31,8 @@ export function useTasks() {
         .from('tasks')
         .select(`
           *,
-          goals (id, title)
+          goals (id, title),
+          personal_goals (id, title)
         `)
         .eq('user_id', user.id)
         .eq('team_id', currentTeam.id)
@@ -72,6 +73,7 @@ export function useTasks() {
     description = '',
     status = 'todo',
     linked_goal_id = null,
+    linked_personal_goal_id = null,
     shared_to_dashboard = false,
     due_date = null
   }) {
@@ -86,12 +88,14 @@ export function useTasks() {
         description,
         status,
         linked_goal_id,
+        linked_personal_goal_id,
         shared_to_dashboard,
         due_date
       })
       .select(`
         *,
-        goals (id, title)
+        goals (id, title),
+        personal_goals (id, title)
       `)
       .single()
 
@@ -108,7 +112,8 @@ export function useTasks() {
       .eq('id', id)
       .select(`
         *,
-        goals (id, title)
+        goals (id, title),
+        personal_goals (id, title)
       `)
       .single()
 

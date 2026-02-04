@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useTeam } from '../../contexts/TeamContext'
 import { supabase } from '../../lib/supabase'
 import GoalCard from './GoalCard'
+import MemberViewDashboard from './MemberViewDashboard'
 import Button from '../common/Button'
 import Modal from '../common/Modal'
 import LoadingSpinner from '../common/LoadingSpinner'
@@ -30,6 +31,9 @@ export default function LeaderDashboard() {
   const [categoryId, setCategoryId] = useState('')
   const [linkedItems, setLinkedItems] = useState({})
   const [loading, setLoading] = useState(true)
+  const [dashboardView, setDashboardView] = useState('goals')
+  const [memberTasks, setMemberTasks] = useState({})
+  const [memberNotes, setMemberNotes] = useState({})
 
   // Category management state
   const [newCategoryName, setNewCategoryName] = useState('')
@@ -39,8 +43,11 @@ export default function LeaderDashboard() {
   useEffect(() => {
     if (currentTeam) {
       fetchLinkedItems()
+      if (dashboardView === 'members') {
+        fetchMemberData()
+      }
     }
-  }, [currentTeam, goals])
+  }, [currentTeam, goals, dashboardView])
 
   async function fetchLinkedItems() {
     if (!currentTeam?.id) {
@@ -88,6 +95,43 @@ export default function LeaderDashboard() {
       setLinkedItems({})
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function fetchMemberData() {
+    if (!currentTeam?.id) return
+
+    try {
+      const [tasksResult, notesResult] = await Promise.all([
+        supabase
+          .from('tasks')
+          .select('id, title, status, due_date, user_id')
+          .eq('team_id', currentTeam.id)
+          .eq('shared_to_dashboard', true),
+        supabase
+          .from('notes')
+          .select('id, title, content, user_id')
+          .eq('team_id', currentTeam.id)
+          .eq('shared_to_dashboard', true)
+      ])
+
+      const tasksByMember = {}
+      const notesByMember = {}
+
+      ;(tasksResult.data || []).forEach(task => {
+        if (!tasksByMember[task.user_id]) tasksByMember[task.user_id] = []
+        tasksByMember[task.user_id].push(task)
+      })
+
+      ;(notesResult.data || []).forEach(note => {
+        if (!notesByMember[note.user_id]) notesByMember[note.user_id] = []
+        notesByMember[note.user_id].push(note)
+      })
+
+      setMemberTasks(tasksByMember)
+      setMemberNotes(notesByMember)
+    } catch (err) {
+      console.error('Error fetching member data:', err)
     }
   }
 
@@ -231,16 +275,46 @@ export default function LeaderDashboard() {
             {(members || []).length} members | {activeGoals.length} active goals
           </p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="secondary" onClick={() => setShowCategoryModal(true)}>
-            Manage Categories
-          </Button>
-          <Button onClick={openCreateModal}>
-            + New Goal
-          </Button>
+        <div className="flex gap-2 items-center">
+          <div className="flex bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
+            <button
+              onClick={() => setDashboardView('goals')}
+              className={`px-3 py-1 rounded text-sm font-medium ${
+                dashboardView === 'goals' ? 'bg-white dark:bg-gray-600 shadow-sm' : 'text-gray-600 dark:text-gray-300'
+              }`}
+            >
+              Goals
+            </button>
+            <button
+              onClick={() => setDashboardView('members')}
+              className={`px-3 py-1 rounded text-sm font-medium ${
+                dashboardView === 'members' ? 'bg-white dark:bg-gray-600 shadow-sm' : 'text-gray-600 dark:text-gray-300'
+              }`}
+            >
+              By Member
+            </button>
+          </div>
+          {dashboardView === 'goals' && (
+            <>
+              <Button variant="secondary" onClick={() => setShowCategoryModal(true)}>
+                Manage Categories
+              </Button>
+              <Button onClick={openCreateModal}>
+                + New Goal
+              </Button>
+            </>
+          )}
         </div>
       </div>
 
+      {dashboardView === 'members' ? (
+        <MemberViewDashboard
+          members={members}
+          memberTasks={memberTasks}
+          memberNotes={memberNotes}
+        />
+      ) : (
+      <>
       {/* Goals by Category - Dynamic Columns */}
       {activeGoals.length === 0 && categories.length === 0 ? (
         <div className="card text-center text-gray-500 dark:text-gray-400 py-8 mb-8">
@@ -320,6 +394,9 @@ export default function LeaderDashboard() {
             ))}
           </div>
         </section>
+      )}
+
+      </>
       )}
 
       {/* Goal Modal */}

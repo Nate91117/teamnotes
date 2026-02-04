@@ -15,6 +15,12 @@ export default function GoalCard({
   const linkedNotes = linkedItems.filter(item => item.type === 'note')
   const linkedTasks = linkedItems.filter(item => item.type === 'task')
 
+  // Task progress stats
+  const totalTasks = linkedTasks.length
+  const doneTasks = linkedTasks.filter(t => t.status === 'done').length
+  const inProgressTasks = linkedTasks.filter(t => t.status === 'in_progress').length
+  const progressPercent = totalTasks > 0 ? Math.round((doneTasks / totalTasks) * 100) : 0
+
   // Get assigned member names
   const assignedMemberNames = (goal.assigned_members || [])
     .map(userId => members.find(m => m.id === userId)?.display_name)
@@ -60,6 +66,24 @@ export default function GoalCard({
                     {name}
                   </span>
                 ))}
+              </div>
+            </div>
+          )}
+
+          {/* Task Progress Bar */}
+          {totalTasks > 0 && (
+            <div className="mb-2">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-xs text-gray-500 dark:text-gray-400">
+                  {doneTasks}/{totalTasks} tasks done
+                </span>
+                <span className="text-xs text-gray-500 dark:text-gray-400">{progressPercent}%</span>
+              </div>
+              <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2">
+                <div
+                  className={`h-2 rounded-full transition-all ${progressPercent === 100 ? 'bg-green-500' : 'bg-primary-500'}`}
+                  style={{ width: `${progressPercent}%` }}
+                />
               </div>
             </div>
           )}
@@ -145,6 +169,17 @@ export default function GoalCard({
                     {item.type}
                   </span>
                   <span className="flex-1 font-medium">{item.title}</span>
+                  {item.type === 'task' && item.status && (
+                    <span className={`badge ${
+                      item.status === 'done' ? 'badge-green' :
+                      item.status === 'in_progress' ? 'badge-yellow' :
+                      'badge-gray'
+                    }`}>
+                      {item.status === 'done' ? 'Done' :
+                       item.status === 'in_progress' ? 'In Progress' :
+                       'To Do'}
+                    </span>
+                  )}
                   <span className="text-gray-500 dark:text-gray-400">by {item.author}</span>
                 </div>
               ))}
