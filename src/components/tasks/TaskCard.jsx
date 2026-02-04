@@ -33,7 +33,7 @@ export default function TaskCard({ task, onEdit, onDelete, onStatusChange, onTog
             <span className={`badge ${statusColors[task.status]}`}>
               {statusLabels[task.status]}
             </span>
-            <h3 className={`font-semibold text-gray-900 ${task.status === 'done' ? 'line-through' : ''}`}>
+            <h3 className={`font-semibold text-gray-900 dark:text-white ${task.status === 'done' ? 'line-through' : ''}`}>
               {task.title}
             </h3>
             {task.goals && (
@@ -44,7 +44,7 @@ export default function TaskCard({ task, onEdit, onDelete, onStatusChange, onTog
             )}
           </div>
           {formattedDate && (
-            <p className={`text-xs mt-1 ${isOverdue ? 'text-red-600 font-medium' : 'text-gray-500'}`}>
+            <p className={`text-xs mt-1 ${isOverdue ? 'text-red-600 dark:text-red-400 font-medium' : 'text-gray-500 dark:text-gray-400'}`}>
               {isOverdue ? 'Overdue: ' : 'Due: '}{formattedDate}
             </p>
           )}
@@ -57,7 +57,7 @@ export default function TaskCard({ task, onEdit, onDelete, onStatusChange, onTog
               <button
                 onClick={onMoveUp}
                 disabled={isFirst}
-                className={`p-1 ${isFirst ? 'text-gray-300' : 'text-gray-500 hover:text-gray-700'}`}
+                className={`p-1 ${isFirst ? 'text-gray-300 dark:text-gray-600' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'}`}
                 title="Move up"
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -67,7 +67,7 @@ export default function TaskCard({ task, onEdit, onDelete, onStatusChange, onTog
               <button
                 onClick={onMoveDown}
                 disabled={isLast}
-                className={`p-1 ${isLast ? 'text-gray-300' : 'text-gray-500 hover:text-gray-700'}`}
+                className={`p-1 ${isLast ? 'text-gray-300 dark:text-gray-600' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'}`}
                 title="Move down"
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -103,7 +103,7 @@ export default function TaskCard({ task, onEdit, onDelete, onStatusChange, onTog
               variant="ghost"
               size="small"
               onClick={() => onDelete(task.id)}
-              className="text-red-600 hover:bg-red-50"
+              className="text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/30"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -114,14 +114,14 @@ export default function TaskCard({ task, onEdit, onDelete, onStatusChange, onTog
       </div>
 
       {task.description && (
-        <p className="text-gray-600 text-sm mb-3">{task.description}</p>
+        <p className="text-gray-600 dark:text-gray-400 text-sm mb-3">{task.description}</p>
       )}
 
       {/* Notes Section */}
       {task.notes && (
         <div className="mb-3">
           <button
-            className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 mb-2"
+            className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white mb-2"
             onClick={() => setShowNotes(!showNotes)}
           >
             <svg
@@ -135,7 +135,7 @@ export default function TaskCard({ task, onEdit, onDelete, onStatusChange, onTog
             <span>Notes</span>
           </button>
           {showNotes && (
-            <div className="bg-gray-50 p-3 rounded-lg text-sm text-gray-700 whitespace-pre-wrap">
+            <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
               {task.notes}
             </div>
           )}
@@ -143,11 +143,11 @@ export default function TaskCard({ task, onEdit, onDelete, onStatusChange, onTog
       )}
 
       {/* Quick status change buttons */}
-      <div className="flex gap-2 pt-2 border-t border-gray-100">
+      <div className="flex gap-2 pt-2 border-t border-gray-100 dark:border-gray-700">
         {task.status !== 'todo' && (
           <button
             onClick={() => onStatusChange(task.id, 'todo')}
-            className="text-xs text-gray-500 hover:text-gray-700"
+            className="text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
           >
             Mark To Do
           </button>

@@ -92,15 +92,15 @@ export default function TasksList() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">My Tasks</h2>
-          <p className="text-gray-600">{tasks.length} tasks</p>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">My Tasks</h2>
+          <p className="text-gray-600 dark:text-gray-400">{tasks.length} tasks</p>
         </div>
         <div className="flex gap-2">
-          <div className="flex bg-gray-100 rounded-lg p-1">
+          <div className="flex bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
             <button
               onClick={() => setView('kanban')}
               className={`px-3 py-1 rounded text-sm font-medium ${
-                view === 'kanban' ? 'bg-white shadow-sm' : 'text-gray-600'
+                view === 'kanban' ? 'bg-white dark:bg-gray-600 shadow-sm' : 'text-gray-600 dark:text-gray-300'
               }`}
             >
               Kanban
@@ -108,7 +108,7 @@ export default function TasksList() {
             <button
               onClick={() => setView('list')}
               className={`px-3 py-1 rounded text-sm font-medium ${
-                view === 'list' ? 'bg-white shadow-sm' : 'text-gray-600'
+                view === 'list' ? 'bg-white dark:bg-gray-600 shadow-sm' : 'text-gray-600 dark:text-gray-300'
               }`}
             >
               List
@@ -121,7 +121,7 @@ export default function TasksList() {
       </div>
 
       {tasks.length === 0 ? (
-        <div className="card text-center text-gray-500 py-12">
+        <div className="card text-center text-gray-500 dark:text-gray-400 py-12">
           <p className="mb-4">No tasks yet. Create your first task!</p>
           <Button onClick={openCreate}>+ New Task</Button>
         </div>
@@ -129,9 +129,9 @@ export default function TasksList() {
         /* Kanban View */
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* To Do Column */}
-          <div className="bg-gray-50 rounded-xl p-4">
+          <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-4">
             <div className="flex items-center gap-2 mb-4">
-              <h3 className="font-semibold text-gray-700">To Do</h3>
+              <h3 className="font-semibold text-gray-700 dark:text-gray-300">To Do</h3>
               <span className="badge badge-gray">{todoTasks.length}</span>
             </div>
             <div className="space-y-3">

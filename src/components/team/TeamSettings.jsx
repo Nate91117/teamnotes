@@ -47,21 +47,21 @@ export default function TeamSettingsComponent() {
     <div className="space-y-8">
       {/* Profile Section */}
       <section className="card">
-        <h2 className="text-xl font-bold text-gray-900 mb-4">My Profile</h2>
+        <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">My Profile</h2>
         <form onSubmit={handleUpdateProfile} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Email
             </label>
             <input
               type="email"
               value={profile?.email || ''}
-              className="input bg-gray-50"
+              className="input bg-gray-50 dark:bg-gray-700"
               disabled
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Display Name
             </label>
             <input
@@ -81,7 +81,7 @@ export default function TeamSettingsComponent() {
       {/* Team Selection */}
       {teams.length > 0 && (
         <section className="card">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">My Teams</h2>
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">My Teams</h2>
           <div className="space-y-2">
             {teams.map(team => (
               <button
@@ -89,17 +89,17 @@ export default function TeamSettingsComponent() {
                 onClick={() => selectTeam(team)}
                 className={`w-full flex items-center justify-between p-3 rounded-lg transition-colors ${
                   currentTeam?.id === team.id
-                    ? 'bg-primary-50 border-2 border-primary-500'
-                    : 'bg-gray-50 hover:bg-gray-100 border-2 border-transparent'
+                    ? 'bg-primary-50 border-2 border-primary-500 dark:bg-primary-900/30 dark:border-primary-400'
+                    : 'bg-gray-50 hover:bg-gray-100 border-2 border-transparent dark:bg-gray-700 dark:hover:bg-gray-600'
                 }`}
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-primary-100 rounded-lg flex items-center justify-center">
-                    <span className="text-primary-700 font-medium text-sm">
+                  <div className="w-8 h-8 bg-primary-100 dark:bg-primary-900 rounded-lg flex items-center justify-center">
+                    <span className="text-primary-700 dark:text-primary-400 font-medium text-sm">
                       {team.name.charAt(0).toUpperCase()}
                     </span>
                   </div>
-                  <span className="font-medium text-gray-900">{team.name}</span>
+                  <span className="font-medium text-gray-900 dark:text-white">{team.name}</span>
                 </div>
                 <span className={`badge ${team.role === 'leader' ? 'badge-blue' : 'badge-gray'}`}>
                   {team.role}
@@ -120,8 +120,8 @@ export default function TeamSettingsComponent() {
       {/* No Teams State */}
       {teams.length === 0 && (
         <section className="card text-center py-8">
-          <h2 className="text-xl font-bold text-gray-900 mb-2">No Teams Yet</h2>
-          <p className="text-gray-600 mb-4">
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">No Teams Yet</h2>
+          <p className="text-gray-600 dark:text-gray-400 mb-4">
             Create a team to get started, or wait for an invitation.
           </p>
           <Button onClick={() => setShowCreateModal(true)}>
@@ -136,7 +136,7 @@ export default function TeamSettingsComponent() {
           <InviteMember />
 
           <section className="card">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">Team Members</h2>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Team Members</h2>
             <MemberList />
           </section>
         </>
@@ -145,7 +145,7 @@ export default function TeamSettingsComponent() {
       {/* Current Team Members (Members view) */}
       {currentTeam && !isLeader && (
         <section className="card">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">Team Members</h2>
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Team Members</h2>
           <MemberList />
         </section>
       )}
@@ -168,7 +168,7 @@ export default function TeamSettingsComponent() {
       >
         <form onSubmit={handleCreateTeam}>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Team Name
             </label>
             <input

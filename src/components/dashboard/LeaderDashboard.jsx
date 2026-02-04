@@ -226,8 +226,8 @@ export default function LeaderDashboard() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Team Dashboard</h2>
-          <p className="text-gray-600">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Team Dashboard</h2>
+          <p className="text-gray-600 dark:text-gray-400">
             {(members || []).length} members | {activeGoals.length} active goals
           </p>
         </div>
@@ -243,11 +243,11 @@ export default function LeaderDashboard() {
 
       {/* Goals by Category - Dynamic Columns */}
       {activeGoals.length === 0 && categories.length === 0 ? (
-        <div className="card text-center text-gray-500 py-8 mb-8">
+        <div className="card text-center text-gray-500 dark:text-gray-400 py-8 mb-8">
           No active goals. Create one to get started!
         </div>
       ) : categories.length === 0 ? (
-        <div className="card text-center text-gray-500 py-8 mb-8">
+        <div className="card text-center text-gray-500 dark:text-gray-400 py-8 mb-8">
           No categories yet. Click "Manage Categories" to create some!
         </div>
       ) : (
@@ -285,7 +285,7 @@ export default function LeaderDashboard() {
       {/* Uncategorized Goals */}
       {uncategorizedGoals.length > 0 && (
         <section className="mb-8">
-          <h3 className="text-lg font-semibold text-gray-500 mb-4">Uncategorized</h3>
+          <h3 className="text-lg font-semibold text-gray-500 dark:text-gray-400 mb-4">Uncategorized</h3>
           <div className="space-y-4">
             {uncategorizedGoals.map(goal => (
               <GoalCard
@@ -305,7 +305,7 @@ export default function LeaderDashboard() {
       {/* Completed Goals */}
       {completedGoals.length > 0 && (
         <section>
-          <h3 className="text-lg font-semibold text-gray-500 mb-4">Completed Goals</h3>
+          <h3 className="text-lg font-semibold text-gray-500 dark:text-gray-400 mb-4">Completed Goals</h3>
           <div className="space-y-4 opacity-75">
             {completedGoals.map(goal => (
               <GoalCard
@@ -340,7 +340,7 @@ export default function LeaderDashboard() {
       >
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Title
             </label>
             <input
@@ -354,7 +354,7 @@ export default function LeaderDashboard() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Description (optional)
             </label>
             <textarea
@@ -367,7 +367,7 @@ export default function LeaderDashboard() {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Due Date (optional)
               </label>
               <input
@@ -379,7 +379,7 @@ export default function LeaderDashboard() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Category (optional)
               </label>
               <select
@@ -396,12 +396,12 @@ export default function LeaderDashboard() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Assign to Members
             </label>
-            <div className="flex flex-wrap gap-2 p-3 bg-gray-50 rounded-lg">
+            <div className="flex flex-wrap gap-2 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
               {members.length === 0 ? (
-                <span className="text-gray-500 text-sm">No team members yet</span>
+                <span className="text-gray-500 dark:text-gray-400 text-sm">No team members yet</span>
               ) : (
                 members.map(member => (
                   <button
@@ -411,7 +411,7 @@ export default function LeaderDashboard() {
                     className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
                       assignedMembers.includes(member.id)
                         ? 'bg-purple-600 text-white'
-                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-600 dark:text-gray-300 dark:hover:bg-gray-500'
                     }`}
                   >
                     {member.display_name}
@@ -422,7 +422,7 @@ export default function LeaderDashboard() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Notes (optional)
             </label>
             <textarea
@@ -441,7 +441,7 @@ export default function LeaderDashboard() {
               onChange={(e) => setShowNotes(e.target.checked)}
               className="w-4 h-4 text-primary-600 rounded border-gray-300 focus:ring-primary-500"
             />
-            <label htmlFor="showNotes" className="text-sm text-gray-700">
+            <label htmlFor="showNotes" className="text-sm text-gray-700 dark:text-gray-300">
               Show notes expanded by default
             </label>
           </div>
@@ -477,7 +477,7 @@ export default function LeaderDashboard() {
           {/* List existing categories */}
           <div className="space-y-2">
             {categories.length === 0 ? (
-              <p className="text-gray-500 text-sm text-center py-4">No categories yet</p>
+              <p className="text-gray-500 dark:text-gray-400 text-sm text-center py-4">No categories yet</p>
             ) : (
               categories.map(cat => {
                 const colors = categoryColors[cat.color] || categoryColors.gray

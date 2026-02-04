@@ -31,7 +31,7 @@ export default function InviteMember() {
 
   return (
     <div className="card">
-      <h3 className="text-lg font-semibold text-gray-900 mb-4">Invite Member</h3>
+      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Invite Member</h3>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="flex gap-2">
           <input
@@ -48,18 +48,18 @@ export default function InviteMember() {
         </div>
 
         {error && (
-          <div className="bg-red-50 text-red-700 p-3 rounded-lg text-sm">
+          <div className="bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400 p-3 rounded-lg text-sm">
             {error}
           </div>
         )}
 
         {message && (
-          <div className="bg-green-50 text-green-700 p-3 rounded-lg text-sm">
+          <div className="bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400 p-3 rounded-lg text-sm">
             {message}
           </div>
         )}
 
-        <p className="text-sm text-gray-500">
+        <p className="text-sm text-gray-500 dark:text-gray-400">
           When this person signs up with this email address, they'll automatically be added to your team.
         </p>
       </form>

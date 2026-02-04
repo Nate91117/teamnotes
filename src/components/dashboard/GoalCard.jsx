@@ -35,28 +35,28 @@ export default function GoalCard({
       <div className="flex items-start justify-between">
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-2 flex-wrap">
-            <h3 className="text-lg font-semibold text-gray-900">{goal.title}</h3>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{goal.title}</h3>
             <span className={`badge ${goal.status === 'active' ? 'badge-green' : 'badge-gray'}`}>
               {goal.status}
             </span>
             {formattedDueDate && (
-              <span className={`badge ${isOverdue ? 'bg-red-100 text-red-800' : 'badge-blue'}`}>
+              <span className={`badge ${isOverdue ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' : 'badge-blue'}`}>
                 {isOverdue ? 'Overdue: ' : 'Due: '}{formattedDueDate}
               </span>
             )}
           </div>
 
           {goal.description && (
-            <p className="text-gray-600 text-sm mb-3">{goal.description}</p>
+            <p className="text-gray-600 dark:text-gray-400 text-sm mb-3">{goal.description}</p>
           )}
 
           {/* Assigned Members */}
           {assignedMemberNames.length > 0 && (
             <div className="flex items-center gap-2 mb-3">
-              <span className="text-xs text-gray-500">Assigned to:</span>
+              <span className="text-xs text-gray-500 dark:text-gray-400">Assigned to:</span>
               <div className="flex flex-wrap gap-1">
                 {assignedMemberNames.map((name, i) => (
-                  <span key={i} className="px-2 py-0.5 bg-purple-100 text-purple-700 rounded-full text-xs">
+                  <span key={i} className="px-2 py-0.5 bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300 rounded-full text-xs">
                     {name}
                   </span>
                 ))}
@@ -90,9 +90,9 @@ export default function GoalCard({
 
       {/* Notes Section */}
       {goal.notes && (
-        <div className="mt-3 pt-3 border-t border-gray-200">
+        <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
           <button
-            className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 mb-2"
+            className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white mb-2"
             onClick={() => setShowNotes(!showNotes)}
           >
             <svg
@@ -106,7 +106,7 @@ export default function GoalCard({
             <span>Notes</span>
           </button>
           {showNotes && (
-            <div className="bg-gray-50 p-3 rounded-lg text-sm text-gray-700 whitespace-pre-wrap">
+            <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
               {goal.notes}
             </div>
           )}
@@ -115,9 +115,9 @@ export default function GoalCard({
 
       {/* Linked Items */}
       {linkedItems.length > 0 && (
-        <div className="mt-3 pt-3 border-t border-gray-200">
+        <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
           <button
-            className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900"
+            className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
             onClick={() => setExpanded(!expanded)}
           >
             <svg
@@ -139,13 +139,13 @@ export default function GoalCard({
               {linkedItems.map(item => (
                 <div
                   key={`${item.type}-${item.id}`}
-                  className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg text-sm"
+                  className="flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-700 rounded-lg text-sm"
                 >
                   <span className={`badge ${item.type === 'note' ? 'badge-blue' : 'badge-yellow'}`}>
                     {item.type}
                   </span>
                   <span className="flex-1 font-medium">{item.title}</span>
-                  <span className="text-gray-500">by {item.author}</span>
+                  <span className="text-gray-500 dark:text-gray-400">by {item.author}</span>
                 </div>
               ))}
             </div>

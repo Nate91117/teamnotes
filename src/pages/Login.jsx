@@ -14,23 +14,23 @@ export default function Login() {
   }, [user, loading, navigate])
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 to-primary-100 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 to-primary-100 dark:from-gray-900 dark:to-gray-800 px-4">
       <div className="max-w-md w-full">
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">TeamNotes</h1>
-          <p className="text-gray-600">
+          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">TeamNotes</h1>
+          <p className="text-gray-600 dark:text-gray-400">
             Collaborate with your team on goals, notes, and tasks
           </p>
         </div>
 
         <div className="card">
-          <h2 className="text-xl font-semibold text-gray-900 mb-6 text-center">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6 text-center">
             Sign in to your account
           </h2>
           <LoginForm />
         </div>
 
-        <p className="text-center text-sm text-gray-600 mt-6">
+        <p className="text-center text-sm text-gray-600 dark:text-gray-400 mt-6">
           Don't have an account?{' '}
           <Link to="/signup" className="text-primary-600 hover:text-primary-700 font-medium">
             Sign up

@@ -22,22 +22,22 @@ export default function MemberList() {
       {members.map(member => (
         <div
           key={member.id}
-          className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
+          className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg"
         >
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center">
-              <span className="text-primary-700 font-medium">
+            <div className="w-10 h-10 bg-primary-100 dark:bg-primary-900 rounded-full flex items-center justify-center">
+              <span className="text-primary-700 dark:text-primary-400 font-medium">
                 {member.display_name?.charAt(0).toUpperCase() || 'U'}
               </span>
             </div>
             <div>
-              <div className="font-medium text-gray-900">
+              <div className="font-medium text-gray-900 dark:text-white">
                 {member.display_name}
                 {member.id === user?.id && (
-                  <span className="text-gray-500 text-sm ml-2">(you)</span>
+                  <span className="text-gray-500 dark:text-gray-400 text-sm ml-2">(you)</span>
                 )}
               </div>
-              <div className="text-sm text-gray-500">{member.email}</div>
+              <div className="text-sm text-gray-500 dark:text-gray-400">{member.email}</div>
             </div>
           </div>
 
@@ -51,7 +51,7 @@ export default function MemberList() {
                 variant="ghost"
                 size="small"
                 onClick={() => handleRemove(member)}
-                className="text-red-600 hover:bg-red-50"
+                className="text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/30"
               >
                 Remove
               </Button>

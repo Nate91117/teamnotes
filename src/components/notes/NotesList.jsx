@@ -58,8 +58,8 @@ export default function NotesList() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">My Notes</h2>
-          <p className="text-gray-600">{notes.length} notes</p>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">My Notes</h2>
+          <p className="text-gray-600 dark:text-gray-400">{notes.length} notes</p>
         </div>
         <Button onClick={openCreate}>
           + New Note
@@ -74,8 +74,8 @@ export default function NotesList() {
             onClick={() => setFilter(f)}
             className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
               filter === f
-                ? 'bg-primary-100 text-primary-700'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                ? 'bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-400'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
             }`}
           >
             {f.charAt(0).toUpperCase() + f.slice(1)}
@@ -85,7 +85,7 @@ export default function NotesList() {
 
       {/* Notes Grid */}
       {filteredNotes.length === 0 ? (
-        <div className="card text-center text-gray-500 py-12">
+        <div className="card text-center text-gray-500 dark:text-gray-400 py-12">
           {filter === 'all' ? (
             <>
               <p className="mb-4">No notes yet. Create your first note!</p>

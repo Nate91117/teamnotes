@@ -13,7 +13,7 @@ export default function NoteCard({ note, onEdit, onDelete, onToggleShare }) {
       <div className="flex items-start justify-between mb-2">
         <div className="flex-1">
           <div className="flex items-center gap-2 flex-wrap">
-            <h3 className="font-semibold text-gray-900">{note.title}</h3>
+            <h3 className="font-semibold text-gray-900 dark:text-white">{note.title}</h3>
             {note.tasks && (
               <span className="badge badge-yellow">{note.tasks.title}</span>
             )}
@@ -21,7 +21,7 @@ export default function NoteCard({ note, onEdit, onDelete, onToggleShare }) {
               <span className="badge badge-green">Shared</span>
             )}
           </div>
-          <p className="text-xs text-gray-500 mt-1">Updated {formattedDate}</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Updated {formattedDate}</p>
         </div>
 
         <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -60,7 +60,7 @@ export default function NoteCard({ note, onEdit, onDelete, onToggleShare }) {
       </div>
 
       {note.content && (
-        <p className="text-gray-600 text-sm whitespace-pre-wrap line-clamp-3">
+        <p className="text-gray-600 dark:text-gray-400 text-sm whitespace-pre-wrap line-clamp-3">
           {note.content}
         </p>
       )}

@@ -60,7 +60,7 @@ export default function NoteEditor({ note, isOpen, onClose, onSave }) {
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
             Title
           </label>
           <input
@@ -74,7 +74,7 @@ export default function NoteEditor({ note, isOpen, onClose, onSave }) {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
             Content
           </label>
           <textarea
@@ -86,7 +86,7 @@ export default function NoteEditor({ note, isOpen, onClose, onSave }) {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
             Link to Task (optional)
           </label>
           <select
@@ -111,7 +111,7 @@ export default function NoteEditor({ note, isOpen, onClose, onSave }) {
             onChange={(e) => setSharedToDashboard(e.target.checked)}
             className="w-4 h-4 text-primary-600 rounded border-gray-300 focus:ring-primary-500"
           />
-          <label htmlFor="shared" className="text-sm text-gray-700">
+          <label htmlFor="shared" className="text-sm text-gray-700 dark:text-gray-300">
             Share to team dashboard
           </label>
         </div>

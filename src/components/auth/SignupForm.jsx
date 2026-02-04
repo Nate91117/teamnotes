@@ -49,7 +49,7 @@ export default function SignupForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
       <div>
-        <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+        <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
           Email address
         </label>
         <input
@@ -64,7 +64,7 @@ export default function SignupForm() {
       </div>
 
       <div>
-        <label htmlFor="displayName" className="block text-sm font-medium text-gray-700 mb-1">
+        <label htmlFor="displayName" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
           Display Name (optional)
         </label>
         <input
@@ -78,7 +78,7 @@ export default function SignupForm() {
       </div>
 
       <div>
-        <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+        <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
           Password
         </label>
         <input
@@ -93,7 +93,7 @@ export default function SignupForm() {
       </div>
 
       <div>
-        <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
+        <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
           Confirm Password
         </label>
         <input
@@ -108,13 +108,13 @@ export default function SignupForm() {
       </div>
 
       {error && (
-        <div className="bg-red-50 text-red-700 p-3 rounded-lg text-sm">
+        <div className="bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400 p-3 rounded-lg text-sm">
           {error}
         </div>
       )}
 
       {success && (
-        <div className="bg-green-50 text-green-700 p-3 rounded-lg text-sm">
+        <div className="bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400 p-3 rounded-lg text-sm">
           {success}
         </div>
       )}
@@ -123,7 +123,7 @@ export default function SignupForm() {
         {loading ? <LoadingSpinner size="small" /> : 'Create Account'}
       </Button>
 
-      <p className="text-center text-sm text-gray-600">
+      <p className="text-center text-sm text-gray-600 dark:text-gray-400">
         Already have an account?{' '}
         <Link to="/login" className="text-primary-600 hover:text-primary-700 font-medium">
           Sign in
