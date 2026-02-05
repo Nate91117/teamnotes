@@ -1,13 +1,26 @@
 import { useState } from 'react'
 import Button from '../common/Button'
 
+const statusColors = {
+  todo: 'badge-gray',
+  in_progress: 'badge-yellow',
+  done: 'badge-green'
+}
+
+const statusLabels = {
+  todo: 'To Do',
+  in_progress: 'In Progress',
+  done: 'Done'
+}
+
 export default function GoalCard({
   goal,
   onEdit,
   onDelete,
   isLeader,
   linkedItems = [],
-  members = []
+  members = [],
+  linkedTaskEdit
 }) {
   const [expanded, setExpanded] = useState(false)
   const [showNotes, setShowNotes] = useState(goal.show_notes || false)
@@ -42,9 +55,6 @@ export default function GoalCard({
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-2 flex-wrap">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{goal.title}</h3>
-            <span className={`badge ${goal.status === 'active' ? 'badge-green' : 'badge-gray'}`}>
-              {goal.status}
-            </span>
             {formattedDueDate && (
               <span className={`badge ${isOverdue ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' : 'badge-blue'}`}>
                 {isOverdue ? 'Overdue: ' : 'Due: '}{formattedDueDate}
@@ -162,7 +172,8 @@ export default function GoalCard({
             <div className="mt-3 space-y-2">
               {linkedItems.map(item => {
                 const isDone = item.type === 'task' && item.status === 'done'
-                const dateLabel = item.type === 'task'
+                const isTask = item.type === 'task'
+                const dateLabel = isTask
                   ? isDone && item.completed_at
                     ? `Completed: ${new Date(item.completed_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
                     : item.due_date
@@ -170,30 +181,113 @@ export default function GoalCard({
                     : null
                   : null
 
+                // Inline editing for this linked task
+                if (isTask && linkedTaskEdit?.editingTask?.id === item.id) {
+                  const assigneeNames = (item.assignees || [])
+                    .map(uid => members.find(m => m.id === uid)?.display_name)
+                    .filter(Boolean)
+
+                  return (
+                    <div key={`${item.type}-${item.id}`} className="p-3 bg-blue-50 dark:bg-blue-900/30 rounded-lg border border-blue-200 dark:border-blue-700">
+                      <div className="space-y-2">
+                        <input
+                          type="text"
+                          value={linkedTaskEdit.editTitle}
+                          onChange={(e) => linkedTaskEdit.setEditTitle(e.target.value)}
+                          className="input text-sm w-full"
+                          placeholder="Task title"
+                        />
+                        <div className="flex gap-2">
+                          <select
+                            value={linkedTaskEdit.editStatus}
+                            onChange={(e) => linkedTaskEdit.setEditStatus(e.target.value)}
+                            className="input text-sm flex-1"
+                          >
+                            <option value="todo">To Do</option>
+                            <option value="in_progress">In Progress</option>
+                            <option value="done">Done</option>
+                          </select>
+                          <input
+                            type="date"
+                            value={linkedTaskEdit.editDueDate}
+                            onChange={(e) => linkedTaskEdit.setEditDueDate(e.target.value)}
+                            className="input text-sm flex-1"
+                          />
+                        </div>
+                        {/* Assignee multi-select pills */}
+                        <div>
+                          <span className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">Assignees:</span>
+                          <div className="flex flex-wrap gap-1">
+                            {members.map(member => (
+                              <button
+                                key={member.id}
+                                type="button"
+                                onClick={() => linkedTaskEdit.toggleAssignee(member.id)}
+                                className={`px-2 py-0.5 rounded-full text-xs font-medium transition-colors ${
+                                  linkedTaskEdit.editAssignees.includes(member.id)
+                                    ? 'bg-purple-600 text-white'
+                                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-600 dark:text-gray-300 dark:hover:bg-gray-500'
+                                }`}
+                              >
+                                {member.display_name}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                        <div className="flex gap-2 justify-end">
+                          <Button variant="secondary" size="small" onClick={linkedTaskEdit.cancelEdit} disabled={linkedTaskEdit.saving}>
+                            Cancel
+                          </Button>
+                          <Button size="small" onClick={linkedTaskEdit.saveEdit} disabled={linkedTaskEdit.saving || !linkedTaskEdit.editTitle.trim()}>
+                            {linkedTaskEdit.saving ? 'Saving...' : 'Save'}
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                }
+
+                // Get assignee display names for this item
+                const itemAssigneeNames = isTask
+                  ? (item.assignees || [])
+                      .map(uid => members.find(m => m.id === uid)?.display_name)
+                      .filter(Boolean)
+                  : []
+
                 return (
                   <div
                     key={`${item.type}-${item.id}`}
-                    className={`flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-700 rounded-lg text-sm ${isDone ? 'opacity-60' : ''}`}
+                    className={`p-2 bg-gray-50 dark:bg-gray-700 rounded-lg text-sm ${isDone ? 'opacity-60' : ''} ${isTask && isLeader ? 'cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors' : ''}`}
+                    onClick={isTask && isLeader && linkedTaskEdit ? () => linkedTaskEdit.openEdit(item) : undefined}
                   >
-                    <span className={`badge ${item.type === 'note' ? 'badge-blue' : 'badge-yellow'}`}>
-                      {item.type}
-                    </span>
-                    <span className={`flex-1 font-medium ${isDone ? 'line-through' : ''}`}>{item.title}</span>
-                    {dateLabel && (
-                      <span className="text-xs text-gray-500 dark:text-gray-400">{dateLabel}</span>
-                    )}
-                    {item.type === 'task' && item.status && (
-                      <span className={`badge ${
-                        item.status === 'done' ? 'badge-green' :
-                        item.status === 'in_progress' ? 'badge-yellow' :
-                        'badge-gray'
-                      }`}>
-                        {item.status === 'done' ? 'Done' :
-                         item.status === 'in_progress' ? 'In Progress' :
-                         'To Do'}
+                    {/* Row 1: type badge + truncated title + status badge */}
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className={`badge flex-shrink-0 ${item.type === 'note' ? 'badge-blue' : 'badge-yellow'}`}>
+                        {item.type}
                       </span>
-                    )}
-                    <span className="text-gray-500 dark:text-gray-400">by {item.author}</span>
+                      <span className={`flex-1 font-medium truncate ${isDone ? 'line-through' : ''}`}>{item.title}</span>
+                      {isTask && item.status && (
+                        <span className={`badge flex-shrink-0 ${statusColors[item.status]}`}>
+                          {statusLabels[item.status]}
+                        </span>
+                      )}
+                    </div>
+                    {/* Row 2: date + assignees + author (indented, smaller text) */}
+                    <div className="flex items-center gap-2 mt-1 pl-14">
+                      {dateLabel && (
+                        <span className="text-xs text-gray-500 dark:text-gray-400">{dateLabel}</span>
+                      )}
+                      {itemAssigneeNames.length > 0 && (
+                        <div className="flex flex-wrap gap-1">
+                          {itemAssigneeNames.map((name, i) => (
+                            <span key={i} className="px-1.5 py-0 bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300 rounded-full text-xs">
+                              {name}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                      <span className="text-xs text-gray-400 dark:text-gray-500 ml-auto">by {item.author}</span>
+                    </div>
                   </div>
                 )
               })}

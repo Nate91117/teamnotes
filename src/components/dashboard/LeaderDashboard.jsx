@@ -40,6 +40,14 @@ export default function LeaderDashboard() {
   const [editingCategory, setEditingCategory] = useState(null)
   const [editCategoryName, setEditCategoryName] = useState('')
 
+  // Inline linked task editing state
+  const [editingLinkedTask, setEditingLinkedTask] = useState(null)
+  const [linkedEditTitle, setLinkedEditTitle] = useState('')
+  const [linkedEditStatus, setLinkedEditStatus] = useState('todo')
+  const [linkedEditDueDate, setLinkedEditDueDate] = useState('')
+  const [linkedEditAssignees, setLinkedEditAssignees] = useState([])
+  const [linkedEditSaving, setLinkedEditSaving] = useState(false)
+
   useEffect(() => {
     if (currentTeam) {
       fetchLinkedItems()
@@ -68,6 +76,20 @@ export default function LeaderDashboard() {
 
       if (tasksError) console.error('Error fetching tasks:', tasksError)
 
+      // Batch-fetch assignees for all linked tasks
+      const taskIds = (tasksData || []).map(t => t.id)
+      let assigneesMap = {}
+      if (taskIds.length > 0) {
+        const { data: assigneesData } = await supabase
+          .from('task_assignees')
+          .select('task_id, user_id')
+          .in('task_id', taskIds)
+        ;(assigneesData || []).forEach(a => {
+          if (!assigneesMap[a.task_id]) assigneesMap[a.task_id] = []
+          assigneesMap[a.task_id].push(a.user_id)
+        })
+      }
+
       if (goals && Array.isArray(goals)) {
         goals.forEach(goal => {
           if (goal?.id) {
@@ -86,7 +108,8 @@ export default function LeaderDashboard() {
             status: task.status,
             due_date: task.due_date,
             completed_at: task.completed_at,
-            author
+            author,
+            assignees: assigneesMap[task.id] || []
           })
         }
       })
@@ -238,6 +261,85 @@ export default function LeaderDashboard() {
     }
   }
 
+  // Inline linked task editing functions
+  function openLinkedTaskEdit(task) {
+    setEditingLinkedTask(task)
+    setLinkedEditTitle(task.title)
+    setLinkedEditStatus(task.status)
+    setLinkedEditDueDate(task.due_date ? task.due_date.split('T')[0] : '')
+    setLinkedEditAssignees(task.assignees || [])
+  }
+
+  function cancelLinkedTaskEdit() {
+    setEditingLinkedTask(null)
+    setLinkedEditTitle('')
+    setLinkedEditStatus('todo')
+    setLinkedEditDueDate('')
+    setLinkedEditAssignees([])
+  }
+
+  async function saveLinkedTaskEdit() {
+    if (!editingLinkedTask || !linkedEditTitle.trim()) return
+    setLinkedEditSaving(true)
+
+    const updates = {
+      title: linkedEditTitle.trim(),
+      status: linkedEditStatus,
+      due_date: linkedEditDueDate ? new Date(linkedEditDueDate).toISOString() : null
+    }
+
+    // Handle completed_at
+    if (linkedEditStatus === 'done' && editingLinkedTask.status !== 'done') {
+      updates.completed_at = new Date().toISOString()
+    } else if (linkedEditStatus !== 'done' && editingLinkedTask.status === 'done') {
+      updates.completed_at = null
+    }
+
+    await supabase
+      .from('tasks')
+      .update(updates)
+      .eq('id', editingLinkedTask.id)
+
+    // Update assignees (replace-all pattern)
+    await supabase
+      .from('task_assignees')
+      .delete()
+      .eq('task_id', editingLinkedTask.id)
+    if (linkedEditAssignees.length > 0) {
+      await supabase
+        .from('task_assignees')
+        .insert(linkedEditAssignees.map(uid => ({ task_id: editingLinkedTask.id, user_id: uid })))
+    }
+
+    setLinkedEditSaving(false)
+    setEditingLinkedTask(null)
+    fetchLinkedItems()
+  }
+
+  function toggleLinkedTaskAssignee(memberId) {
+    setLinkedEditAssignees(prev =>
+      prev.includes(memberId)
+        ? prev.filter(id => id !== memberId)
+        : [...prev, memberId]
+    )
+  }
+
+  const linkedTaskEditProps = {
+    editingTask: editingLinkedTask,
+    editTitle: linkedEditTitle,
+    setEditTitle: setLinkedEditTitle,
+    editStatus: linkedEditStatus,
+    setEditStatus: setLinkedEditStatus,
+    editDueDate: linkedEditDueDate,
+    setEditDueDate: setLinkedEditDueDate,
+    editAssignees: linkedEditAssignees,
+    toggleAssignee: toggleLinkedTaskAssignee,
+    saving: linkedEditSaving,
+    openEdit: openLinkedTaskEdit,
+    cancelEdit: cancelLinkedTaskEdit,
+    saveEdit: saveLinkedTaskEdit
+  }
+
   // Sort by due date (nulls last)
   function sortByDueDate(a, b) {
     if (!a.due_date && !b.due_date) return 0
@@ -350,6 +452,7 @@ export default function LeaderDashboard() {
                       isLeader={true}
                       linkedItems={linkedItems[goal.id] || []}
                       members={members}
+                      linkedTaskEdit={linkedTaskEditProps}
                     />
                   ))}
                 </div>
@@ -373,6 +476,7 @@ export default function LeaderDashboard() {
                 isLeader={true}
                 linkedItems={linkedItems[goal.id] || []}
                 members={members}
+                linkedTaskEdit={linkedTaskEditProps}
               />
             ))}
           </div>
@@ -393,6 +497,7 @@ export default function LeaderDashboard() {
                 isLeader={true}
                 linkedItems={linkedItems[goal.id] || []}
                 members={members}
+                linkedTaskEdit={linkedTaskEditProps}
               />
             ))}
           </div>

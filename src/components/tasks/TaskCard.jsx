@@ -23,7 +23,7 @@ function getDaysUntilDue(dueDateStr) {
   return diffDays
 }
 
-export default function TaskCard({ task, onEdit, onDelete, onStatusChange, onToggleShare, onMoveUp, onMoveDown, isFirst, isLast, showRankControls = false, members = [] }) {
+export default function TaskCard({ task, onEdit, onDelete, onStatusChange, onToggleShare, onMoveUp, onMoveDown, isFirst, isLast, showRankControls = false, hideNotes = false, members = [] }) {
   const formattedDate = task.due_date
     ? new Date(task.due_date).toLocaleDateString('en-US', {
         month: 'short',
@@ -189,7 +189,7 @@ export default function TaskCard({ task, onEdit, onDelete, onStatusChange, onTog
         </div>
 
         {/* Right side: notes */}
-        {task.notes && (
+        {task.notes && !hideNotes && (
           <div className="w-64 flex-shrink-0">
             <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap h-full">
               {task.notes}

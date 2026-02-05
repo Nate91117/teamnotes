@@ -99,9 +99,9 @@ export default function TasksList() {
 
   // Filter completed tasks
   const visibleTasks = hideCompleted ? tasks.filter(t => t.status !== 'done') : tasks
-  const visibleTodoTasks = todoTasks
-  const visibleInProgressTasks = inProgressTasks
-  const visibleDoneTasks = hideCompleted ? [] : doneTasks
+  const visibleTodoTasks = [...todoTasks].sort(sortByDueDate)
+  const visibleInProgressTasks = [...inProgressTasks].sort(sortByDueDate)
+  const visibleDoneTasks = hideCompleted ? [] : [...doneTasks].sort(sortByDueDate)
 
   const sortedTasks = [...visibleTasks].sort(sortByDueDate)
   const totalCount = tasks.length
@@ -173,11 +173,7 @@ export default function TasksList() {
                   onDelete={handleDelete}
                   onStatusChange={handleStatusChange}
                   onToggleShare={handleToggleShare}
-                  showRankControls={showRankControls}
-                  onMoveUp={() => handleMoveUp(visibleTodoTasks, index, 'todo')}
-                  onMoveDown={() => handleMoveDown(visibleTodoTasks, index, 'todo')}
-                  isFirst={index === 0}
-                  isLast={index === visibleTodoTasks.length - 1}
+                  hideNotes={true}
                   members={members}
                 />
               ))}
@@ -199,11 +195,7 @@ export default function TasksList() {
                   onDelete={handleDelete}
                   onStatusChange={handleStatusChange}
                   onToggleShare={handleToggleShare}
-                  showRankControls={showRankControls}
-                  onMoveUp={() => handleMoveUp(visibleInProgressTasks, index, 'in_progress')}
-                  onMoveDown={() => handleMoveDown(visibleInProgressTasks, index, 'in_progress')}
-                  isFirst={index === 0}
-                  isLast={index === visibleInProgressTasks.length - 1}
+                  hideNotes={true}
                   members={members}
                 />
               ))}
@@ -226,11 +218,7 @@ export default function TasksList() {
                     onDelete={handleDelete}
                     onStatusChange={handleStatusChange}
                     onToggleShare={handleToggleShare}
-                    showRankControls={showRankControls}
-                    onMoveUp={() => handleMoveUp(visibleDoneTasks, index, 'done')}
-                    onMoveDown={() => handleMoveDown(visibleDoneTasks, index, 'done')}
-                    isFirst={index === 0}
-                    isLast={index === visibleDoneTasks.length - 1}
+                    hideNotes={true}
                     members={members}
                   />
                 ))}

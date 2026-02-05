@@ -106,9 +106,17 @@ export default function MemberViewDashboard({ members, memberTasks, memberNotes,
           const allTasks = memberTasks[member.id] || []
           const notes = memberNotes[member.id] || []
 
-          // Separate active and done tasks
-          const activeTasks = allTasks.filter(t => t.status !== 'done')
-          const doneTasks = allTasks.filter(t => t.status === 'done')
+          // Sort by due date (soonest first, nulls last)
+          function sortByDueDate(a, b) {
+            if (!a.due_date && !b.due_date) return 0
+            if (!a.due_date) return 1
+            if (!b.due_date) return -1
+            return new Date(a.due_date) - new Date(b.due_date)
+          }
+
+          // Separate active and done tasks, sorted by due date
+          const activeTasks = allTasks.filter(t => t.status !== 'done').sort(sortByDueDate)
+          const doneTasks = allTasks.filter(t => t.status === 'done').sort(sortByDueDate)
           const visibleTasks = hideDone ? activeTasks : [...activeTasks, ...doneTasks]
 
           const hasItems = allTasks.length > 0 || notes.length > 0
