@@ -1,27 +1,37 @@
 # TeamNotes
 
-A React-based team collaboration app with Supabase backend featuring team goals, personal notes/tasks, and linking between member items and team goals.
+A React-based team collaboration app with Supabase backend for managing team goals, personal tasks, notes, and personal goals with cross-linking between items.
 
 ## Features
 
 ### Team Leader
-- **Project Dashboard** - Overview of all team goals with linked items
-- **Goal Management** - Create, edit, delete team goals
-- **Team Management** - Invite members via email, view team roster
-- **Linked Items View** - See all notes/tasks linked to each goal
+- **Project Dashboard** - Overview of all team goals organized by category
+- **Goal Management** - Create, edit, delete, and categorize team goals with due dates
+- **Member Assignment** - Assign goals and tasks to specific team members
+- **Members View** - See all shared tasks and notes per team member
+- **Team Management** - Invite members via email, view/manage team roster
+- **Category System** - Color-coded goal categories for organization
 
 ### Team Member
-- **Personal Workspace** - Own notes and tasks space
-- **Note Creation** - Notes with optional goal linking
-- **Task Management** - Personal tasks with status tracking (To Do, In Progress, Done)
-- **Share to Dashboard** - Toggle to show items on team dashboard
+- **Personal Tasks** - Kanban board (To Do / In Progress / Done) and list views with inline editing
+- **Task Features** - Due dates, multi-assignee support, link to team goals and personal goals, share to dashboard
+- **Personal Notes** - Create and manage notes, link to tasks, share to dashboard
+- **Personal Goals** - Year-based personal goals linked to team goals and tasks with progress tracking
+- **Share to Dashboard** - Toggle items visible on the team leader's dashboard
+
+### General
+- **Dark Mode** - Full dark mode support across all components
+- **Responsive Design** - Works on desktop and mobile
+- **Real-time Updates** - Live data sync via Supabase subscriptions
+- **Settings** - Account management, password changes, preferences
 
 ## Tech Stack
 
-- **Frontend**: React 18 + Vite + React Router
+- **Frontend**: React 18 + Vite + React Router 6
 - **Backend**: Supabase (PostgreSQL + Auth + Realtime)
-- **Styling**: Tailwind CSS
-- **State Management**: React Context + Supabase subscriptions
+- **Styling**: Tailwind CSS 3 (class-based dark mode)
+- **State Management**: React Context + Custom Hooks + Supabase subscriptions
+- **Deployment**: GitHub Pages via GitHub Actions
 
 ## Getting Started
 
@@ -47,30 +57,18 @@ A React-based team collaboration app with Supabase backend featuring team goals,
 
 ### 3. Set Up Database
 
-1. Go to your Supabase project's SQL Editor
-2. Copy the contents of `supabase-schema.sql`
-3. Run the SQL to create all tables, indexes, and policies
+Run the SQL migration files in your Supabase SQL Editor in this order:
+1. `supabase-schema.sql` - Base tables, indexes, and RLS policies
+2. `supabase-categories-migration.sql` - Categories for goal organization
+3. `supabase-personal-goals-migration.sql` - Personal goals feature
+4. `supabase-task-enhancements-migration.sql` - Multi-assignee tasks, personal goal links, inline editing
 
-### 4. Configure Authentication
-
-1. In Supabase Dashboard, go to Authentication > Providers
-2. Ensure Email provider is enabled
-3. Enable "Confirm email" (optional, but recommended)
-4. Configure the Site URL in Authentication > URL Configuration:
-   - Site URL: `http://localhost:3000` (for development)
-   - Redirect URLs: `http://localhost:3000/dashboard`
-
-### 5. Install and Run
+### 4. Install and Run
 
 ```bash
-# Install dependencies
-npm install
-
-# Start development server
-npm run dev
+npm install   # Install dependencies
+npm run dev   # Start dev server at http://localhost:3000
 ```
-
-The app will be available at `http://localhost:3000`
 
 ## Project Structure
 
@@ -78,62 +76,82 @@ The app will be available at `http://localhost:3000`
 teamnotes/
 ├── src/
 │   ├── components/
+│   │   ├── auth/          # LoginForm, SignupForm, ProtectedRoute
 │   │   ├── common/        # Button, Modal, LoadingSpinner, Layout
-│   │   ├── auth/          # LoginForm, ProtectedRoute
-│   │   ├── dashboard/     # LeaderDashboard, MemberDashboard, GoalCard
+│   │   ├── dashboard/     # LeaderDashboard, MemberDashboard, MemberViewDashboard, GoalCard
 │   │   ├── notes/         # NotesList, NoteEditor, NoteCard
 │   │   ├── tasks/         # TasksList, TaskEditor, TaskCard
-│   │   └── team/          # TeamSettings, MemberList, InviteMember
+│   │   ├── goals/         # PersonalGoalsList, PersonalGoalCard, PersonalGoalEditor
+│   │   ├── team/          # TeamSettings, MemberList, InviteMember
+│   │   └── settings/      # AccountSettings, SecuritySettings, PreferenceSettings
 │   ├── contexts/
-│   │   ├── AuthContext.jsx    # Authentication state
-│   │   └── TeamContext.jsx    # Team and goals state
+│   │   ├── AuthContext.jsx    # Authentication state & methods
+│   │   └── TeamContext.jsx    # Team, goals, members, categories state
 │   ├── hooks/
-│   │   ├── useNotes.js    # Notes CRUD operations
-│   │   ├── useTasks.js    # Tasks CRUD operations
-│   │   └── useTeam.js     # Team context hook
+│   │   ├── useNotes.js        # Notes CRUD operations
+│   │   ├── useTasks.js        # Tasks CRUD with multi-assignee & goal links
+│   │   ├── usePersonalGoals.js # Personal goals with year filtering
+│   │   └── useTeam.js         # Team context wrapper
 │   ├── lib/
 │   │   └── supabase.js    # Supabase client
 │   ├── pages/
-│   │   ├── Login.jsx
-│   │   ├── Dashboard.jsx
-│   │   ├── MyNotes.jsx
-│   │   ├── MyTasks.jsx
-│   │   └── TeamSettings.jsx
+│   │   ├── Login.jsx, Signup.jsx
+│   │   ├── Dashboard.jsx      # Routes to Leader or Member dashboard
+│   │   ├── MyTasks.jsx        # Tasks page with error boundary
+│   │   ├── MyNotes.jsx        # Notes page
+│   │   ├── PersonalGoals.jsx  # Personal goals page
+│   │   ├── TeamSettings.jsx   # Team management (leader only)
+│   │   └── Settings.jsx       # Account settings
 │   ├── App.jsx
 │   ├── main.jsx
-│   └── index.css
-├── supabase-schema.sql    # Database setup script
+│   └── index.css          # Tailwind imports + custom component styles
+├── .github/workflows/
+│   └── deploy.yml         # GitHub Actions deployment pipeline
+├── supabase-schema.sql                    # Base database schema
+├── supabase-categories-migration.sql      # Categories migration
+├── supabase-personal-goals-migration.sql  # Personal goals migration
+├── supabase-task-enhancements-migration.sql # Task enhancements migration
+├── supabase-fix-rls.sql                   # RLS policy fixes
+├── CLAUDE.md              # AI assistant project context
 ├── .env.example           # Environment template
-└── package.json
+├── package.json
+├── vite.config.js
+├── tailwind.config.js
+└── postcss.config.js
 ```
 
 ## User Flows
 
 ### Sign Up / Join Flow
-1. User enters email on login page
-2. Magic link sent to email (no password needed)
-3. Click link to authenticate
-4. If invited: automatically added to team
-5. If new: option to create team (become leader) or wait for invitation
+1. User enters email + password on signup page
+2. Profile created in database
+3. If pending invitation exists for that email: auto-joins team as member
+4. If no invitation: can create a new team (becomes leader)
 
-### Linking Flow
-1. Member creates note or task
-2. Can optionally link to existing team goal (dropdown)
-3. Can toggle "Share to Dashboard"
-4. Linked items appear on leader's goal detail view
+### Task Workflow
+1. Member creates task with title, description, due date
+2. Optionally links to team goal and/or personal goals
+3. Leader can assign tasks to multiple team members
+4. Status progression: To Do → In Progress → Done
+5. Toggle "Share to Dashboard" to make visible on leader's view
+
+### Goal Linking
+1. Leader creates team goals, optionally assigns categories and members
+2. Members create personal goals for the year
+3. Members link personal goals to team goals
+4. Members link tasks to both team goals and personal goals
+5. Leader sees linked/shared items on the dashboard
 
 ## Development
 
 ```bash
-# Development server
-npm run dev
-
-# Build for production
-npm run build
-
-# Preview production build
-npm run preview
+npm run dev       # Development server (port 3000, auto-opens browser)
+npm run build     # Production build to ./dist
+npm run preview   # Preview production build
 ```
+
+### Deployment
+Push to `master` triggers automatic deployment to GitHub Pages via GitHub Actions.
 
 ## License
 
