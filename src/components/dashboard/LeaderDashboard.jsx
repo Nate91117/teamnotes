@@ -61,7 +61,7 @@ export default function LeaderDashboard() {
     try {
       const { data: tasksData, error: tasksError } = await supabase
         .from('tasks')
-        .select('id, title, linked_goal_id, status, user_id')
+        .select('id, title, linked_goal_id, status, due_date, completed_at, user_id')
         .eq('team_id', currentTeam.id)
         .eq('shared_to_dashboard', true)
         .not('linked_goal_id', 'is', null)
@@ -84,6 +84,8 @@ export default function LeaderDashboard() {
             id: task.id,
             title: task.title,
             status: task.status,
+            due_date: task.due_date,
+            completed_at: task.completed_at,
             author
           })
         }
@@ -105,7 +107,7 @@ export default function LeaderDashboard() {
       const [tasksResult, notesResult] = await Promise.all([
         supabase
           .from('tasks')
-          .select('id, title, status, due_date, user_id')
+          .select('id, title, status, due_date, completed_at, user_id')
           .eq('team_id', currentTeam.id)
           .eq('shared_to_dashboard', true),
         supabase
@@ -312,6 +314,7 @@ export default function LeaderDashboard() {
           members={members}
           memberTasks={memberTasks}
           memberNotes={memberNotes}
+          onTaskUpdate={() => { fetchMemberData(); fetchLinkedItems(); }}
         />
       ) : (
       <>

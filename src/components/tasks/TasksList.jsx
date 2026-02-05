@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useTasks } from '../../hooks/useTasks'
+import { useTeam } from '../../contexts/TeamContext'
 import TaskCard from './TaskCard'
 import TaskEditor from './TaskEditor'
 import Button from '../common/Button'
@@ -7,10 +8,12 @@ import LoadingSpinner from '../common/LoadingSpinner'
 
 export default function TasksList() {
   const { tasks, todoTasks, inProgressTasks, doneTasks, loading, createTask, updateTask, deleteTask, reorderTasks } = useTasks()
+  const { members } = useTeam()
   const [showEditor, setShowEditor] = useState(false)
   const [editingTask, setEditingTask] = useState(null)
   const [view, setView] = useState('list')
   const [showRankControls, setShowRankControls] = useState(true)
+  const [hideCompleted, setHideCompleted] = useState(true)
 
   function openCreate() {
     setEditingTask(null)
@@ -86,16 +89,43 @@ export default function TasksList() {
     )
   }
 
-  const sortedTasks = [...tasks].sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0))
+  // Sort by due date (nulls last) for default ordering
+  function sortByDueDate(a, b) {
+    if (!a.due_date && !b.due_date) return 0
+    if (!a.due_date) return 1
+    if (!b.due_date) return -1
+    return new Date(a.due_date) - new Date(b.due_date)
+  }
+
+  // Filter completed tasks
+  const visibleTasks = hideCompleted ? tasks.filter(t => t.status !== 'done') : tasks
+  const visibleTodoTasks = todoTasks
+  const visibleInProgressTasks = inProgressTasks
+  const visibleDoneTasks = hideCompleted ? [] : doneTasks
+
+  const sortedTasks = [...visibleTasks].sort(sortByDueDate)
+  const totalCount = tasks.length
+  const hiddenCount = tasks.length - visibleTasks.length
 
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
         <div>
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white">My Tasks</h2>
-          <p className="text-gray-600 dark:text-gray-400">{tasks.length} tasks</p>
+          <p className="text-gray-600 dark:text-gray-400">
+            {totalCount} tasks{hiddenCount > 0 ? ` (${hiddenCount} completed hidden)` : ''}
+          </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-center">
+          <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={hideCompleted}
+              onChange={(e) => setHideCompleted(e.target.checked)}
+              className="w-4 h-4 text-primary-600 rounded border-gray-300 focus:ring-primary-500"
+            />
+            Hide completed
+          </label>
           <div className="flex bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
             <button
               onClick={() => setView('kanban')}
@@ -132,10 +162,10 @@ export default function TasksList() {
           <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-4">
             <div className="flex items-center gap-2 mb-4">
               <h3 className="font-semibold text-gray-700 dark:text-gray-300">To Do</h3>
-              <span className="badge badge-gray">{todoTasks.length}</span>
+              <span className="badge badge-gray">{visibleTodoTasks.length}</span>
             </div>
             <div className="space-y-3">
-              {todoTasks.map((task, index) => (
+              {visibleTodoTasks.map((task, index) => (
                 <TaskCard
                   key={task.id}
                   task={task}
@@ -144,10 +174,11 @@ export default function TasksList() {
                   onStatusChange={handleStatusChange}
                   onToggleShare={handleToggleShare}
                   showRankControls={showRankControls}
-                  onMoveUp={() => handleMoveUp(todoTasks, index, 'todo')}
-                  onMoveDown={() => handleMoveDown(todoTasks, index, 'todo')}
+                  onMoveUp={() => handleMoveUp(visibleTodoTasks, index, 'todo')}
+                  onMoveDown={() => handleMoveDown(visibleTodoTasks, index, 'todo')}
                   isFirst={index === 0}
-                  isLast={index === todoTasks.length - 1}
+                  isLast={index === visibleTodoTasks.length - 1}
+                  members={members}
                 />
               ))}
             </div>
@@ -157,10 +188,10 @@ export default function TasksList() {
           <div className="bg-yellow-50 rounded-xl p-4">
             <div className="flex items-center gap-2 mb-4">
               <h3 className="font-semibold text-yellow-700">In Progress</h3>
-              <span className="badge badge-yellow">{inProgressTasks.length}</span>
+              <span className="badge badge-yellow">{visibleInProgressTasks.length}</span>
             </div>
             <div className="space-y-3">
-              {inProgressTasks.map((task, index) => (
+              {visibleInProgressTasks.map((task, index) => (
                 <TaskCard
                   key={task.id}
                   task={task}
@@ -169,39 +200,43 @@ export default function TasksList() {
                   onStatusChange={handleStatusChange}
                   onToggleShare={handleToggleShare}
                   showRankControls={showRankControls}
-                  onMoveUp={() => handleMoveUp(inProgressTasks, index, 'in_progress')}
-                  onMoveDown={() => handleMoveDown(inProgressTasks, index, 'in_progress')}
+                  onMoveUp={() => handleMoveUp(visibleInProgressTasks, index, 'in_progress')}
+                  onMoveDown={() => handleMoveDown(visibleInProgressTasks, index, 'in_progress')}
                   isFirst={index === 0}
-                  isLast={index === inProgressTasks.length - 1}
+                  isLast={index === visibleInProgressTasks.length - 1}
+                  members={members}
                 />
               ))}
             </div>
           </div>
 
           {/* Done Column */}
-          <div className="bg-green-50 rounded-xl p-4">
-            <div className="flex items-center gap-2 mb-4">
-              <h3 className="font-semibold text-green-700">Done</h3>
-              <span className="badge badge-green">{doneTasks.length}</span>
+          {!hideCompleted && (
+            <div className="bg-green-50 rounded-xl p-4">
+              <div className="flex items-center gap-2 mb-4">
+                <h3 className="font-semibold text-green-700">Done</h3>
+                <span className="badge badge-green">{visibleDoneTasks.length}</span>
+              </div>
+              <div className="space-y-3">
+                {visibleDoneTasks.map((task, index) => (
+                  <TaskCard
+                    key={task.id}
+                    task={task}
+                    onEdit={openEdit}
+                    onDelete={handleDelete}
+                    onStatusChange={handleStatusChange}
+                    onToggleShare={handleToggleShare}
+                    showRankControls={showRankControls}
+                    onMoveUp={() => handleMoveUp(visibleDoneTasks, index, 'done')}
+                    onMoveDown={() => handleMoveDown(visibleDoneTasks, index, 'done')}
+                    isFirst={index === 0}
+                    isLast={index === visibleDoneTasks.length - 1}
+                    members={members}
+                  />
+                ))}
+              </div>
             </div>
-            <div className="space-y-3">
-              {doneTasks.map((task, index) => (
-                <TaskCard
-                  key={task.id}
-                  task={task}
-                  onEdit={openEdit}
-                  onDelete={handleDelete}
-                  onStatusChange={handleStatusChange}
-                  onToggleShare={handleToggleShare}
-                  showRankControls={showRankControls}
-                  onMoveUp={() => handleMoveUp(doneTasks, index, 'done')}
-                  onMoveDown={() => handleMoveDown(doneTasks, index, 'done')}
-                  isFirst={index === 0}
-                  isLast={index === doneTasks.length - 1}
-                />
-              ))}
-            </div>
-          </div>
+          )}
         </div>
       ) : (
         /* List View */
@@ -219,6 +254,7 @@ export default function TasksList() {
               onMoveDown={() => handleMoveDownAll(index)}
               isFirst={index === 0}
               isLast={index === sortedTasks.length - 1}
+              members={members}
             />
           ))}
         </div>

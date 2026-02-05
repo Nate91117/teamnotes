@@ -160,29 +160,43 @@ export default function GoalCard({
 
           {expanded && (
             <div className="mt-3 space-y-2">
-              {linkedItems.map(item => (
-                <div
-                  key={`${item.type}-${item.id}`}
-                  className="flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-700 rounded-lg text-sm"
-                >
-                  <span className={`badge ${item.type === 'note' ? 'badge-blue' : 'badge-yellow'}`}>
-                    {item.type}
-                  </span>
-                  <span className="flex-1 font-medium">{item.title}</span>
-                  {item.type === 'task' && item.status && (
-                    <span className={`badge ${
-                      item.status === 'done' ? 'badge-green' :
-                      item.status === 'in_progress' ? 'badge-yellow' :
-                      'badge-gray'
-                    }`}>
-                      {item.status === 'done' ? 'Done' :
-                       item.status === 'in_progress' ? 'In Progress' :
-                       'To Do'}
+              {linkedItems.map(item => {
+                const isDone = item.type === 'task' && item.status === 'done'
+                const dateLabel = item.type === 'task'
+                  ? isDone && item.completed_at
+                    ? `Completed: ${new Date(item.completed_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
+                    : item.due_date
+                    ? `Due: ${new Date(item.due_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
+                    : null
+                  : null
+
+                return (
+                  <div
+                    key={`${item.type}-${item.id}`}
+                    className={`flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-700 rounded-lg text-sm ${isDone ? 'opacity-60' : ''}`}
+                  >
+                    <span className={`badge ${item.type === 'note' ? 'badge-blue' : 'badge-yellow'}`}>
+                      {item.type}
                     </span>
-                  )}
-                  <span className="text-gray-500 dark:text-gray-400">by {item.author}</span>
-                </div>
-              ))}
+                    <span className={`flex-1 font-medium ${isDone ? 'line-through' : ''}`}>{item.title}</span>
+                    {dateLabel && (
+                      <span className="text-xs text-gray-500 dark:text-gray-400">{dateLabel}</span>
+                    )}
+                    {item.type === 'task' && item.status && (
+                      <span className={`badge ${
+                        item.status === 'done' ? 'badge-green' :
+                        item.status === 'in_progress' ? 'badge-yellow' :
+                        'badge-gray'
+                      }`}>
+                        {item.status === 'done' ? 'Done' :
+                         item.status === 'in_progress' ? 'In Progress' :
+                         'To Do'}
+                      </span>
+                    )}
+                    <span className="text-gray-500 dark:text-gray-400">by {item.author}</span>
+                  </div>
+                )
+              })}
             </div>
           )}
         </div>

@@ -48,16 +48,26 @@ export function usePersonalGoals() {
               .select('goal_id')
               .eq('personal_goal_id', goal.id)
 
-            // Fetch linked tasks
-            const { data: linkedTasks } = await supabase
-              .from('tasks')
-              .select('id, title, status, due_date')
-              .eq('linked_personal_goal_id', goal.id)
+            // Fetch linked tasks via junction table
+            const { data: taskLinks } = await supabase
+              .from('task_personal_goal_links')
+              .select('task_id')
+              .eq('personal_goal_id', goal.id)
+
+            let linkedTasks = []
+            const taskLinkIds = (taskLinks || []).map(l => l.task_id)
+            if (taskLinkIds.length > 0) {
+              const { data: tasksData } = await supabase
+                .from('tasks')
+                .select('id, title, status, due_date, completed_at')
+                .in('id', taskLinkIds)
+              linkedTasks = tasksData || []
+            }
 
             return {
               ...goal,
               linked_goal_ids: (links || []).map(l => l.goal_id),
-              linked_tasks: linkedTasks || []
+              linked_tasks: linkedTasks
             }
           })
         )

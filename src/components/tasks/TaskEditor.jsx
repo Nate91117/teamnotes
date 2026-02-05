@@ -5,14 +5,15 @@ import Button from '../common/Button'
 import Modal from '../common/Modal'
 
 export default function TaskEditor({ task, isOpen, onClose, onSave }) {
-  const { goals } = useTeam()
+  const { goals, members, isLeader } = useTeam()
   const { activeGoals: activePersonalGoals } = usePersonalGoals()
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [notes, setNotes] = useState('')
   const [status, setStatus] = useState('todo')
   const [linkedGoalId, setLinkedGoalId] = useState('')
-  const [linkedPersonalGoalId, setLinkedPersonalGoalId] = useState('')
+  const [linkedPersonalGoalIds, setLinkedPersonalGoalIds] = useState([])
+  const [assigneeIds, setAssigneeIds] = useState([])
   const [sharedToDashboard, setSharedToDashboard] = useState(false)
   const [dueDate, setDueDate] = useState('')
   const [saving, setSaving] = useState(false)
@@ -26,7 +27,8 @@ export default function TaskEditor({ task, isOpen, onClose, onSave }) {
       setNotes(task.notes || '')
       setStatus(task.status)
       setLinkedGoalId(task.linked_goal_id || '')
-      setLinkedPersonalGoalId(task.linked_personal_goal_id || '')
+      setLinkedPersonalGoalIds(task.linked_personal_goal_ids || [])
+      setAssigneeIds(task.assignees || [])
       setSharedToDashboard(task.shared_to_dashboard || false)
       setDueDate(task.due_date ? task.due_date.split('T')[0] : '')
     } else {
@@ -35,11 +37,28 @@ export default function TaskEditor({ task, isOpen, onClose, onSave }) {
       setNotes('')
       setStatus('todo')
       setLinkedGoalId('')
-      setLinkedPersonalGoalId('')
+      setLinkedPersonalGoalIds([])
+      setAssigneeIds([])
       setSharedToDashboard(false)
       setDueDate('')
     }
   }, [task])
+
+  function togglePersonalGoal(pgId) {
+    setLinkedPersonalGoalIds(prev =>
+      prev.includes(pgId)
+        ? prev.filter(id => id !== pgId)
+        : [...prev, pgId]
+    )
+  }
+
+  function toggleAssignee(memberId) {
+    setAssigneeIds(prev =>
+      prev.includes(memberId)
+        ? prev.filter(id => id !== memberId)
+        : [...prev, memberId]
+    )
+  }
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -52,7 +71,8 @@ export default function TaskEditor({ task, isOpen, onClose, onSave }) {
       notes,
       status,
       linked_goal_id: linkedGoalId || null,
-      linked_personal_goal_id: linkedPersonalGoalId || null,
+      linked_personal_goal_ids: linkedPersonalGoalIds,
+      assignee_ids: assigneeIds,
       shared_to_dashboard: sharedToDashboard,
       due_date: dueDate ? new Date(dueDate).toISOString() : null
     })
@@ -152,21 +172,58 @@ export default function TaskEditor({ task, isOpen, onClose, onSave }) {
 
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            Link to Personal Goal (optional)
+            Link to Personal Goals (optional)
           </label>
-          <select
-            value={linkedPersonalGoalId}
-            onChange={(e) => setLinkedPersonalGoalId(e.target.value)}
-            className="input"
-          >
-            <option value="">No linked personal goal</option>
-            {(activePersonalGoals || []).map(pg => (
-              <option key={pg.id} value={pg.id}>
-                {pg.title}
-              </option>
-            ))}
-          </select>
+          <div className="flex flex-wrap gap-2 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+            {(activePersonalGoals || []).length === 0 ? (
+              <span className="text-gray-500 dark:text-gray-400 text-sm">No personal goals available</span>
+            ) : (
+              (activePersonalGoals || []).map(pg => (
+                <button
+                  key={pg.id}
+                  type="button"
+                  onClick={() => togglePersonalGoal(pg.id)}
+                  className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
+                    linkedPersonalGoalIds.includes(pg.id)
+                      ? 'bg-green-600 text-white'
+                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-600 dark:text-gray-300 dark:hover:bg-gray-500'
+                  }`}
+                >
+                  {pg.title}
+                </button>
+              ))
+            )}
+          </div>
         </div>
+
+        {/* Assignees - only visible to leaders */}
+        {isLeader && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Assign to Members
+            </label>
+            <div className="flex flex-wrap gap-2 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+              {(members || []).length === 0 ? (
+                <span className="text-gray-500 dark:text-gray-400 text-sm">No team members yet</span>
+              ) : (
+                (members || []).map(member => (
+                  <button
+                    key={member.id}
+                    type="button"
+                    onClick={() => toggleAssignee(member.id)}
+                    className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
+                      assigneeIds.includes(member.id)
+                        ? 'bg-purple-600 text-white'
+                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-600 dark:text-gray-300 dark:hover:bg-gray-500'
+                    }`}
+                  >
+                    {member.display_name}
+                  </button>
+                ))
+              )}
+            </div>
+          </div>
+        )}
 
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">

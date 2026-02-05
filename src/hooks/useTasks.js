@@ -42,7 +42,42 @@ export function useTasks() {
         console.error('Error fetching tasks:', error)
         setTasks([])
       } else {
-        setTasks(data || [])
+        // Fetch assignees and personal goal links for all tasks
+        const taskIds = (data || []).map(t => t.id)
+
+        let assigneesMap = {}
+        let pgLinksMap = {}
+
+        if (taskIds.length > 0) {
+          const [assigneesResult, pgLinksResult] = await Promise.all([
+            supabase
+              .from('task_assignees')
+              .select('task_id, user_id')
+              .in('task_id', taskIds),
+            supabase
+              .from('task_personal_goal_links')
+              .select('task_id, personal_goal_id')
+              .in('task_id', taskIds)
+          ])
+
+          ;(assigneesResult.data || []).forEach(a => {
+            if (!assigneesMap[a.task_id]) assigneesMap[a.task_id] = []
+            assigneesMap[a.task_id].push(a.user_id)
+          })
+
+          ;(pgLinksResult.data || []).forEach(l => {
+            if (!pgLinksMap[l.task_id]) pgLinksMap[l.task_id] = []
+            pgLinksMap[l.task_id].push(l.personal_goal_id)
+          })
+        }
+
+        const tasksWithRelations = (data || []).map(t => ({
+          ...t,
+          assignees: assigneesMap[t.id] || [],
+          linked_personal_goal_ids: pgLinksMap[t.id] || []
+        }))
+
+        setTasks(tasksWithRelations)
       }
     } catch (err) {
       console.error('Error fetching tasks:', err)
@@ -71,9 +106,11 @@ export function useTasks() {
   async function createTask({
     title,
     description = '',
+    notes = '',
     status = 'todo',
     linked_goal_id = null,
-    linked_personal_goal_id = null,
+    linked_personal_goal_ids = [],
+    assignee_ids = [],
     shared_to_dashboard = false,
     due_date = null
   }) {
@@ -86,9 +123,9 @@ export function useTasks() {
         team_id: currentTeam.id,
         title,
         description,
+        notes,
         status,
         linked_goal_id,
-        linked_personal_goal_id,
         shared_to_dashboard,
         due_date
       })
@@ -100,15 +137,44 @@ export function useTasks() {
       .single()
 
     if (!error && data) {
-      setTasks([data, ...tasks])
+      // Insert assignees
+      if (assignee_ids.length > 0) {
+        await supabase
+          .from('task_assignees')
+          .insert(assignee_ids.map(uid => ({
+            task_id: data.id,
+            user_id: uid
+          })))
+      }
+
+      // Insert personal goal links
+      if (linked_personal_goal_ids.length > 0) {
+        await supabase
+          .from('task_personal_goal_links')
+          .insert(linked_personal_goal_ids.map(pgId => ({
+            task_id: data.id,
+            personal_goal_id: pgId
+          })))
+      }
+
+      await fetchTasks()
     }
     return { data, error }
   }
 
   async function updateTask(id, updates) {
+    const { assignee_ids, linked_personal_goal_ids, ...dbUpdates } = updates
+
+    // Handle completed_at tracking
+    if (dbUpdates.status === 'done') {
+      dbUpdates.completed_at = new Date().toISOString()
+    } else if (dbUpdates.status && dbUpdates.status !== 'done') {
+      dbUpdates.completed_at = null
+    }
+
     const { data, error } = await supabase
       .from('tasks')
-      .update(updates)
+      .update(dbUpdates)
       .eq('id', id)
       .select(`
         *,
@@ -118,7 +184,41 @@ export function useTasks() {
       .single()
 
     if (!error && data) {
-      setTasks(tasks.map(t => t.id === id ? data : t))
+      // Update assignees if provided
+      if (assignee_ids !== undefined) {
+        await supabase
+          .from('task_assignees')
+          .delete()
+          .eq('task_id', id)
+
+        if (assignee_ids.length > 0) {
+          await supabase
+            .from('task_assignees')
+            .insert(assignee_ids.map(uid => ({
+              task_id: id,
+              user_id: uid
+            })))
+        }
+      }
+
+      // Update personal goal links if provided
+      if (linked_personal_goal_ids !== undefined) {
+        await supabase
+          .from('task_personal_goal_links')
+          .delete()
+          .eq('task_id', id)
+
+        if (linked_personal_goal_ids.length > 0) {
+          await supabase
+            .from('task_personal_goal_links')
+            .insert(linked_personal_goal_ids.map(pgId => ({
+              task_id: id,
+              personal_goal_id: pgId
+            })))
+        }
+      }
+
+      await fetchTasks()
     }
     return { data, error }
   }
