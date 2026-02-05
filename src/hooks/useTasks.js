@@ -31,8 +31,7 @@ export function useTasks() {
         .from('tasks')
         .select(`
           *,
-          goals (id, title),
-          personal_goals (id, title)
+          goals (id, title)
         `)
         .eq('user_id', user.id)
         .eq('team_id', currentTeam.id)
@@ -131,8 +130,7 @@ export function useTasks() {
       })
       .select(`
         *,
-        goals (id, title),
-        personal_goals (id, title)
+        goals (id, title)
       `)
       .single()
 
@@ -178,8 +176,7 @@ export function useTasks() {
       .eq('id', id)
       .select(`
         *,
-        goals (id, title),
-        personal_goals (id, title)
+        goals (id, title)
       `)
       .single()
 
