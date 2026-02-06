@@ -12,26 +12,39 @@ const statusLabels = {
   done: 'Done'
 }
 
+// Get date string in Central Time (YYYY-MM-DD format)
+function getDateInCentral(date) {
+  return new Date(date).toLocaleDateString('en-CA', { timeZone: 'America/Chicago' })
+}
+
 function getDaysUntilDue(dueDateStr) {
   if (!dueDateStr) return null
-  const now = new Date()
-  now.setHours(0, 0, 0, 0)
-  const due = new Date(dueDateStr)
-  due.setHours(0, 0, 0, 0)
-  const diffMs = due - now
+  const todayStr = getDateInCentral(new Date())
+  const dueStr = getDateInCentral(dueDateStr)
+  const today = new Date(todayStr)
+  const due = new Date(dueStr)
+  const diffMs = due - today
   const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24))
   return diffDays
+}
+
+function isDateOverdue(dueDateStr) {
+  if (!dueDateStr) return false
+  const todayStr = getDateInCentral(new Date())
+  const dueStr = getDateInCentral(dueDateStr)
+  return dueStr < todayStr
 }
 
 export default function TaskCard({ task, onEdit, onDelete, onStatusChange, onToggleShare, onMoveUp, onMoveDown, isFirst, isLast, showRankControls = false, hideNotes = false, members = [] }) {
   const formattedDate = task.due_date
     ? new Date(task.due_date).toLocaleDateString('en-US', {
         month: 'short',
-        day: 'numeric'
+        day: 'numeric',
+        timeZone: 'America/Chicago'
       })
     : null
 
-  const isOverdue = task.due_date && new Date(task.due_date) < new Date() && task.status !== 'done'
+  const isOverdue = task.due_date && isDateOverdue(task.due_date) && task.status !== 'done'
   const daysUntilDue = getDaysUntilDue(task.due_date)
 
   // Get assignee names

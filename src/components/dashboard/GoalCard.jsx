@@ -13,6 +13,18 @@ const statusLabels = {
   done: 'Done'
 }
 
+// Get date string in Central Time (YYYY-MM-DD format)
+function getDateInCentral(date) {
+  return new Date(date).toLocaleDateString('en-CA', { timeZone: 'America/Chicago' })
+}
+
+function isDateOverdue(dueDateStr) {
+  if (!dueDateStr) return false
+  const todayStr = getDateInCentral(new Date())
+  const dueStr = getDateInCentral(dueDateStr)
+  return dueStr < todayStr
+}
+
 export default function GoalCard({
   goal,
   onEdit,
@@ -43,11 +55,12 @@ export default function GoalCard({
     ? new Date(goal.due_date).toLocaleDateString('en-US', {
         month: 'short',
         day: 'numeric',
-        year: 'numeric'
+        year: 'numeric',
+        timeZone: 'America/Chicago'
       })
     : null
 
-  const isOverdue = goal.due_date && new Date(goal.due_date) < new Date() && goal.status !== 'completed'
+  const isOverdue = goal.due_date && isDateOverdue(goal.due_date) && goal.status !== 'completed'
 
   return (
     <div className="card">
@@ -175,9 +188,9 @@ export default function GoalCard({
                 const isTask = item.type === 'task'
                 const dateLabel = isTask
                   ? isDone && item.completed_at
-                    ? `Completed: ${new Date(item.completed_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
+                    ? `Completed: ${new Date(item.completed_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'America/Chicago' })}`
                     : item.due_date
-                    ? `Due: ${new Date(item.due_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
+                    ? `Due: ${new Date(item.due_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'America/Chicago' })}`
                     : null
                   : null
 

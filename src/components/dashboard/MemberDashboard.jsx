@@ -114,7 +114,7 @@ export default function MemberDashboard() {
                   </div>
                   {task.due_date && (
                     <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                      Due: {new Date(task.due_date).toLocaleDateString()}
+                      Due: {new Date(task.due_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'America/Chicago' })}
                     </div>
                   )}
                 </div>

@@ -4,6 +4,18 @@ import { usePersonalGoals } from '../../hooks/usePersonalGoals'
 import Button from '../common/Button'
 import Modal from '../common/Modal'
 
+// Get date string in Central Time (YYYY-MM-DD format for input fields)
+function getDateInCentral(dateStr) {
+  if (!dateStr) return ''
+  return new Date(dateStr).toLocaleDateString('en-CA', { timeZone: 'America/Chicago' })
+}
+
+// Convert YYYY-MM-DD to ISO string at noon UTC (so date stays same in any US timezone)
+function dateToNoonUTC(dateStr) {
+  if (!dateStr) return null
+  return `${dateStr}T12:00:00.000Z`
+}
+
 export default function TaskEditor({ task, isOpen, onClose, onSave }) {
   const { goals, members, isLeader } = useTeam()
   const { activeGoals: activePersonalGoals } = usePersonalGoals()
@@ -30,7 +42,7 @@ export default function TaskEditor({ task, isOpen, onClose, onSave }) {
       setLinkedPersonalGoalIds(task.linked_personal_goal_ids || [])
       setAssigneeIds(task.assignees || [])
       setSharedToDashboard(task.shared_to_dashboard || false)
-      setDueDate(task.due_date ? task.due_date.split('T')[0] : '')
+      setDueDate(getDateInCentral(task.due_date))
     } else {
       setTitle('')
       setDescription('')
@@ -74,7 +86,7 @@ export default function TaskEditor({ task, isOpen, onClose, onSave }) {
       linked_personal_goal_ids: linkedPersonalGoalIds,
       assignee_ids: assigneeIds,
       shared_to_dashboard: sharedToDashboard,
-      due_date: dueDate ? new Date(dueDate).toISOString() : null
+      due_date: dateToNoonUTC(dueDate)
     })
     setSaving(false)
     onClose()

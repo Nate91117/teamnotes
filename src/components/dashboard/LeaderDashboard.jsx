@@ -17,6 +17,18 @@ const categoryColors = {
   gray: { bg: 'bg-gray-50', header: 'text-gray-700', badge: 'bg-gray-200 text-gray-800' },
 }
 
+// Get date string in Central Time (YYYY-MM-DD format for input fields)
+function getDateInCentral(dateStr) {
+  if (!dateStr) return ''
+  return new Date(dateStr).toLocaleDateString('en-CA', { timeZone: 'America/Chicago' })
+}
+
+// Convert YYYY-MM-DD to ISO string at noon UTC (so date stays same in any US timezone)
+function dateToNoonUTC(dateStr) {
+  if (!dateStr) return null
+  return `${dateStr}T12:00:00.000Z`
+}
+
 export default function LeaderDashboard() {
   const { currentTeam, goals, createGoal, updateGoal, deleteGoal, updateGoalMembers, members, categories, createCategory, updateCategory, deleteCategory } = useTeam()
   const [showModal, setShowModal] = useState(false)
@@ -140,14 +152,40 @@ export default function LeaderDashboard() {
           .eq('shared_to_dashboard', true)
       ])
 
-      const tasksByMember = {}
-      const notesByMember = {}
+      const tasks = tasksResult.data || []
+      const taskIds = tasks.map(t => t.id)
 
-      ;(tasksResult.data || []).forEach(task => {
-        if (!tasksByMember[task.user_id]) tasksByMember[task.user_id] = []
-        tasksByMember[task.user_id].push(task)
+      // Fetch assignees for all tasks
+      let assigneesMap = {}
+      if (taskIds.length > 0) {
+        const { data: assigneesData } = await supabase
+          .from('task_assignees')
+          .select('task_id, user_id')
+          .in('task_id', taskIds)
+        ;(assigneesData || []).forEach(a => {
+          if (!assigneesMap[a.task_id]) assigneesMap[a.task_id] = []
+          assigneesMap[a.task_id].push(a.user_id)
+        })
+      }
+
+      // Group tasks by assignee (or creator if no assignees)
+      const tasksByMember = {}
+      tasks.forEach(task => {
+        const assignees = assigneesMap[task.id] || []
+        if (assignees.length > 0) {
+          // Task has assignees - show under each assigned member
+          assignees.forEach(assigneeId => {
+            if (!tasksByMember[assigneeId]) tasksByMember[assigneeId] = []
+            tasksByMember[assigneeId].push(task)
+          })
+        } else {
+          // No assignees - show under creator
+          if (!tasksByMember[task.user_id]) tasksByMember[task.user_id] = []
+          tasksByMember[task.user_id].push(task)
+        }
       })
 
+      const notesByMember = {}
       ;(notesResult.data || []).forEach(note => {
         if (!notesByMember[note.user_id]) notesByMember[note.user_id] = []
         notesByMember[note.user_id].push(note)
@@ -176,7 +214,7 @@ export default function LeaderDashboard() {
     setEditingGoal(goal)
     setTitle(goal.title)
     setDescription(goal.description || '')
-    setDueDate(goal.due_date ? goal.due_date.split('T')[0] : '')
+    setDueDate(getDateInCentral(goal.due_date))
     setNotes(goal.notes || '')
     setShowNotes(goal.show_notes || false)
     setAssignedMembers(goal.assigned_members || [])
@@ -192,7 +230,7 @@ export default function LeaderDashboard() {
       await updateGoal(editingGoal.id, {
         title,
         description,
-        due_date: dueDate ? new Date(dueDate).toISOString() : null,
+        due_date: dateToNoonUTC(dueDate),
         notes,
         show_notes: showNotes,
         category_id: categoryId || null
@@ -202,7 +240,7 @@ export default function LeaderDashboard() {
       await createGoal({
         title,
         description,
-        due_date: dueDate ? new Date(dueDate).toISOString() : null,
+        due_date: dateToNoonUTC(dueDate),
         notes,
         show_notes: showNotes,
         assigned_members: assignedMembers,
@@ -266,7 +304,7 @@ export default function LeaderDashboard() {
     setEditingLinkedTask(task)
     setLinkedEditTitle(task.title)
     setLinkedEditStatus(task.status)
-    setLinkedEditDueDate(task.due_date ? task.due_date.split('T')[0] : '')
+    setLinkedEditDueDate(getDateInCentral(task.due_date))
     setLinkedEditAssignees(task.assignees || [])
   }
 
@@ -285,7 +323,7 @@ export default function LeaderDashboard() {
     const updates = {
       title: linkedEditTitle.trim(),
       status: linkedEditStatus,
-      due_date: linkedEditDueDate ? new Date(linkedEditDueDate).toISOString() : null
+      due_date: dateToNoonUTC(linkedEditDueDate)
     }
 
     // Handle completed_at

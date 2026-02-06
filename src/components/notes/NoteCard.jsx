@@ -5,7 +5,8 @@ export default function NoteCard({ note, onEdit, onDelete, onToggleShare }) {
     month: 'short',
     day: 'numeric',
     hour: '2-digit',
-    minute: '2-digit'
+    minute: '2-digit',
+    timeZone: 'America/Chicago'
   })
 
   return (

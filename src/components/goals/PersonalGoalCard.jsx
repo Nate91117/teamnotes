@@ -14,6 +14,18 @@ const statusLabels = {
   done: 'Done'
 }
 
+// Get date string in Central Time (YYYY-MM-DD format)
+function getDateInCentral(date) {
+  return new Date(date).toLocaleDateString('en-CA', { timeZone: 'America/Chicago' })
+}
+
+function isDateOverdue(dueDateStr) {
+  if (!dueDateStr) return false
+  const todayStr = getDateInCentral(new Date())
+  const dueStr = getDateInCentral(dueDateStr)
+  return dueStr < todayStr
+}
+
 export default function PersonalGoalCard({ goal, onEdit, onDelete, onToggleStatus }) {
   const [expanded, setExpanded] = useState(false)
   const { goals: teamGoals } = useTeam()
@@ -119,7 +131,7 @@ export default function PersonalGoalCard({ goal, onEdit, onDelete, onToggleStatu
           {expanded && (
             <div className="mt-3 space-y-2">
               {linkedTasks.map(task => {
-                const isOverdue = task.due_date && new Date(task.due_date) < new Date() && task.status !== 'done'
+                const isOverdue = task.due_date && isDateOverdue(task.due_date) && task.status !== 'done'
                 return (
                   <div
                     key={task.id}
@@ -132,7 +144,7 @@ export default function PersonalGoalCard({ goal, onEdit, onDelete, onToggleStatu
                     {task.due_date && (
                       <span className={`text-xs ${isOverdue ? 'text-red-600 dark:text-red-400 font-medium' : 'text-gray-500 dark:text-gray-400'}`}>
                         {isOverdue ? 'Overdue: ' : 'Due: '}
-                        {new Date(task.due_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                        {new Date(task.due_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'America/Chicago' })}
                       </span>
                     )}
                   </div>

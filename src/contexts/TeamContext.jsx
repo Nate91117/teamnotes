@@ -449,6 +449,52 @@ export function TeamProvider({ children }) {
     return { data, error }
   }
 
+  async function createPlaceholderMember(displayName) {
+    if (!currentTeam) return { error: 'No team selected' }
+
+    try {
+      // Create a placeholder profile with a unique fake email
+      const placeholderId = crypto.randomUUID()
+      const placeholderEmail = `placeholder-${placeholderId}@teamnotes.local`
+
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .insert({
+          id: placeholderId,
+          email: placeholderEmail,
+          display_name: displayName,
+          password: '' // No password needed for placeholder
+        })
+        .select()
+        .single()
+
+      if (profileError) {
+        console.error('Error creating placeholder profile:', profileError)
+        return { error: profileError }
+      }
+
+      // Add to team_members
+      const { error: memberError } = await supabase
+        .from('team_members')
+        .insert({
+          team_id: currentTeam.id,
+          user_id: placeholderId,
+          role: 'member'
+        })
+
+      if (memberError) {
+        console.error('Error adding placeholder to team:', memberError)
+        return { error: memberError }
+      }
+
+      await fetchMembers()
+      return { data: profile, error: null }
+    } catch (err) {
+      console.error('Error in createPlaceholderMember:', err)
+      return { error: err }
+    }
+  }
+
   async function removeMember(userId) {
     if (!currentTeam) return { error: 'No team selected' }
 
@@ -486,6 +532,7 @@ export function TeamProvider({ children }) {
     updateCategory,
     deleteCategory,
     inviteMember,
+    createPlaceholderMember,
     removeMember,
     refreshTeams: fetchTeams,
     refreshGoals: fetchGoals,

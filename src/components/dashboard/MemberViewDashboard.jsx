@@ -14,20 +14,38 @@ const statusLabels = {
   done: 'Done'
 }
 
+// Get date string in Central Time (YYYY-MM-DD format)
+function getDateInCentral(date) {
+  return new Date(date).toLocaleDateString('en-CA', { timeZone: 'America/Chicago' })
+}
+
 function getDaysUntilDue(dueDateStr) {
   if (!dueDateStr) return null
-  const now = new Date()
-  now.setHours(0, 0, 0, 0)
-  const due = new Date(dueDateStr)
-  due.setHours(0, 0, 0, 0)
-  const diffMs = due - now
+  const todayStr = getDateInCentral(new Date())
+  const dueStr = getDateInCentral(dueDateStr)
+  const today = new Date(todayStr)
+  const due = new Date(dueStr)
+  const diffMs = due - today
   const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24))
   return diffDays
 }
 
+function isDateOverdue(dueDateStr) {
+  if (!dueDateStr) return false
+  const todayStr = getDateInCentral(new Date())
+  const dueStr = getDateInCentral(dueDateStr)
+  return dueStr < todayStr
+}
+
 function formatDate(dateStr) {
   if (!dateStr) return null
-  return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'America/Chicago' })
+}
+
+// Convert YYYY-MM-DD to ISO string at noon UTC (so date stays same in any US timezone)
+function dateToNoonUTC(dateStr) {
+  if (!dateStr) return null
+  return `${dateStr}T12:00:00.000Z`
 }
 
 export default function MemberViewDashboard({ members, memberTasks, memberNotes, onTaskUpdate }) {
@@ -50,7 +68,7 @@ export default function MemberViewDashboard({ members, memberTasks, memberNotes,
     setEditingTask(task)
     setEditTitle(task.title)
     setEditStatus(task.status)
-    setEditDueDate(task.due_date ? task.due_date.split('T')[0] : '')
+    setEditDueDate(getDateInCentral(task.due_date))
   }
 
   function cancelEdit() {
@@ -67,7 +85,7 @@ export default function MemberViewDashboard({ members, memberTasks, memberNotes,
     const updates = {
       title: editTitle.trim(),
       status: editStatus,
-      due_date: editDueDate ? new Date(editDueDate).toISOString() : null
+      due_date: dateToNoonUTC(editDueDate)
     }
 
     // Handle completed_at
@@ -153,7 +171,7 @@ export default function MemberViewDashboard({ members, memberTasks, memberNotes,
                       <div className="space-y-2">
                         {visibleTasks.map(task => {
                           const isDone = task.status === 'done'
-                          const isOverdue = task.due_date && new Date(task.due_date) < new Date() && !isDone
+                          const isOverdue = task.due_date && isDateOverdue(task.due_date) && !isDone
                           const daysUntilDue = getDaysUntilDue(task.due_date)
 
                           let daysLabel = null
