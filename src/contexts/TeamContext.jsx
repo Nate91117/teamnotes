@@ -19,15 +19,11 @@ export function TeamProvider({ children }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    console.log('TeamContext: user changed, user is', user ? 'present' : 'null')
     if (user) {
-      console.log('TeamContext: fetching teams...')
       fetchTeams().finally(() => {
-        console.log('TeamContext: fetchTeams complete, setting loading false')
         setLoading(false)
       })
     } else {
-      console.log('TeamContext: no user, resetting state')
       setTeams([])
       setCurrentTeam(null)
       setMembership(null)
@@ -50,24 +46,12 @@ export function TeamProvider({ children }) {
   }, [currentTeam])
 
   async function fetchTeams() {
-    console.log('TeamContext: fetchTeams starting')
     try {
-      // Simple test query first
-      console.log('TeamContext: testing simple query...')
-      const testStart = Date.now()
-      const { data: testData, error: testError } = await supabase
-        .from('team_members')
-        .select('*')
-        .limit(1)
-      console.log('TeamContext: test query took', Date.now() - testStart, 'ms', { testData, testError })
-
       // First get team memberships
       const { data: memberships, error: memberError } = await supabase
         .from('team_members')
         .select('team_id, role, joined_at')
         .eq('user_id', user.id)
-
-      console.log('TeamContext: memberships query returned', { memberships, memberError })
 
       if (memberError) {
         console.error('Error fetching memberships:', memberError)
@@ -76,7 +60,6 @@ export function TeamProvider({ children }) {
       }
 
       if (!memberships || memberships.length === 0) {
-        console.log('TeamContext: no team memberships found')
         setTeams([])
         return
       }
@@ -87,8 +70,6 @@ export function TeamProvider({ children }) {
         .from('teams')
         .select('id, name, leader_id, created_at')
         .in('id', teamIds)
-
-      console.log('TeamContext: teams query returned', { teamsData, teamsError })
 
       if (teamsError) {
         console.error('Error fetching teams:', teamsError)
@@ -106,14 +87,11 @@ export function TeamProvider({ children }) {
         } : null
       }).filter(t => t !== null)
 
-      console.log('TeamContext: setting teams', userTeams.length, 'teams found')
       setTeams(userTeams)
 
       if (userTeams.length > 0 && !currentTeam) {
-        console.log('TeamContext: selecting first team')
         selectTeam(userTeams[0])
       }
-      console.log('TeamContext: fetchTeams done')
     } catch (err) {
       console.error('Error fetching teams:', err)
       setTeams([])
@@ -292,7 +270,6 @@ export function TeamProvider({ children }) {
     if (!user) return { error: 'Not authenticated' }
 
     try {
-      console.log('Creating team:', name)
       const { data: team, error: teamError } = await supabase
         .from('teams')
         .insert({
@@ -307,8 +284,6 @@ export function TeamProvider({ children }) {
         return { error: teamError }
       }
 
-      console.log('Team created:', team)
-
       const { error: memberError } = await supabase
         .from('team_members')
         .insert({
@@ -322,7 +297,6 @@ export function TeamProvider({ children }) {
         return { error: memberError }
       }
 
-      console.log('Member added, fetching teams...')
       await fetchTeams()
 
       // Select the new team

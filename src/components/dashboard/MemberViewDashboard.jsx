@@ -55,6 +55,7 @@ export default function MemberViewDashboard({ members, memberTasks, memberNotes,
   const [editStatus, setEditStatus] = useState('todo')
   const [editDueDate, setEditDueDate] = useState('')
   const [saving, setSaving] = useState(false)
+  const [taskFilter, setTaskFilter] = useState('all') // 'all' | 'standard' | 'monthly'
 
   if (!members || members.length === 0) {
     return (
@@ -105,6 +106,23 @@ export default function MemberViewDashboard({ members, memberTasks, memberNotes,
     if (onTaskUpdate) onTaskUpdate()
   }
 
+  // Filter tasks based on monthly filter and visibility rules
+  function filterTasks(allTasks) {
+    return allTasks.filter(task => {
+      const isMonthlyInstance = task.is_monthly && task.monthly_source_id
+      const isMonthlyTemplate = task.is_monthly && !task.monthly_source_id
+      const isStandard = !task.is_monthly
+
+      // Don't show monthly templates on the dashboard
+      if (isMonthlyTemplate) return false
+
+      // Apply filter
+      if (taskFilter === 'standard') return isStandard
+      if (taskFilter === 'monthly') return isMonthlyInstance
+      return true // 'all'
+    })
+  }
+
   return (
     <div>
       <div className="flex items-center gap-3 mb-4">
@@ -117,11 +135,39 @@ export default function MemberViewDashboard({ members, memberTasks, memberNotes,
           />
           Hide completed tasks
         </label>
+
+        {/* Task type filter */}
+        <div className="flex bg-gray-100 dark:bg-gray-700 rounded-lg p-1 ml-auto">
+          <button
+            onClick={() => setTaskFilter('all')}
+            className={`px-3 py-1 rounded text-sm font-medium ${
+              taskFilter === 'all' ? 'bg-white dark:bg-gray-600 shadow-sm' : 'text-gray-600 dark:text-gray-300'
+            }`}
+          >
+            All
+          </button>
+          <button
+            onClick={() => setTaskFilter('standard')}
+            className={`px-3 py-1 rounded text-sm font-medium ${
+              taskFilter === 'standard' ? 'bg-white dark:bg-gray-600 shadow-sm' : 'text-gray-600 dark:text-gray-300'
+            }`}
+          >
+            Standard
+          </button>
+          <button
+            onClick={() => setTaskFilter('monthly')}
+            className={`px-3 py-1 rounded text-sm font-medium ${
+              taskFilter === 'monthly' ? 'bg-white dark:bg-gray-600 shadow-sm' : 'text-gray-600 dark:text-gray-300'
+            }`}
+          >
+            Monthly
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {members.map(member => {
-          const allTasks = memberTasks[member.id] || []
+          const allTasks = filterTasks(memberTasks[member.id] || [])
           const notes = memberNotes[member.id] || []
 
           // Sort by due date (soonest first, nulls last)
@@ -173,6 +219,7 @@ export default function MemberViewDashboard({ members, memberTasks, memberNotes,
                           const isDone = task.status === 'done'
                           const isOverdue = task.due_date && isDateOverdue(task.due_date) && !isDone
                           const daysUntilDue = getDaysUntilDue(task.due_date)
+                          const isMonthlyTask = task.is_monthly
 
                           let daysLabel = null
                           if (daysUntilDue !== null && !isDone) {
@@ -243,6 +290,11 @@ export default function MemberViewDashboard({ members, memberTasks, memberNotes,
                               <span className={`badge ${statusColors[task.status]}`}>
                                 {statusLabels[task.status]}
                               </span>
+                              {isMonthlyTask && (
+                                <span className="badge bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300 text-xs">
+                                  Monthly
+                                </span>
+                              )}
                               <span className={`flex-1 font-medium text-gray-900 dark:text-white ${isDone ? 'line-through' : ''}`}>
                                 {task.title}
                               </span>

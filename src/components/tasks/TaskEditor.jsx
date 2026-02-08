@@ -16,7 +16,7 @@ function dateToNoonUTC(dateStr) {
   return `${dateStr}T12:00:00.000Z`
 }
 
-export default function TaskEditor({ task, isOpen, onClose, onSave }) {
+export default function TaskEditor({ task, isOpen, onClose, onSave, isMonthlyMode = false }) {
   const { goals, members, isLeader } = useTeam()
   const { activeGoals: activePersonalGoals } = usePersonalGoals()
   const [title, setTitle] = useState('')
@@ -28,6 +28,7 @@ export default function TaskEditor({ task, isOpen, onClose, onSave }) {
   const [assigneeIds, setAssigneeIds] = useState([])
   const [sharedToDashboard, setSharedToDashboard] = useState(false)
   const [dueDate, setDueDate] = useState('')
+  const [isMonthly, setIsMonthly] = useState(false)
   const [saving, setSaving] = useState(false)
 
   const activeGoals = (goals || []).filter(g => g.status === 'active')
@@ -43,6 +44,7 @@ export default function TaskEditor({ task, isOpen, onClose, onSave }) {
       setAssigneeIds(task.assignees || [])
       setSharedToDashboard(task.shared_to_dashboard || false)
       setDueDate(getDateInCentral(task.due_date))
+      setIsMonthly(task.is_monthly || false)
     } else {
       setTitle('')
       setDescription('')
@@ -53,6 +55,7 @@ export default function TaskEditor({ task, isOpen, onClose, onSave }) {
       setAssigneeIds([])
       setSharedToDashboard(false)
       setDueDate('')
+      setIsMonthly(isMonthlyMode)
     }
   }, [task])
 
@@ -86,7 +89,8 @@ export default function TaskEditor({ task, isOpen, onClose, onSave }) {
       linked_personal_goal_ids: linkedPersonalGoalIds,
       assignee_ids: assigneeIds,
       shared_to_dashboard: sharedToDashboard,
-      due_date: dateToNoonUTC(dueDate)
+      due_date: dateToNoonUTC(dueDate),
+      is_monthly: isMonthly
     })
     setSaving(false)
     onClose()
@@ -259,6 +263,19 @@ export default function TaskEditor({ task, isOpen, onClose, onSave }) {
           />
           <label htmlFor="taskShared" className="text-sm text-gray-700 dark:text-gray-300">
             Share to team dashboard
+          </label>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            id="taskMonthly"
+            checked={isMonthly}
+            onChange={(e) => setIsMonthly(e.target.checked)}
+            className="w-4 h-4 text-primary-600 rounded border-gray-300 focus:ring-primary-500"
+          />
+          <label htmlFor="taskMonthly" className="text-sm text-gray-700 dark:text-gray-300">
+            Monthly task (auto-creates a copy each month)
           </label>
         </div>
       </form>

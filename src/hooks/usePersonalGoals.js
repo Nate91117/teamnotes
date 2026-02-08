@@ -40,38 +40,59 @@ export function usePersonalGoals() {
         console.error('Error fetching personal goals:', error)
         setPersonalGoals([])
       } else {
-        // Fetch linked team goals for each personal goal
-        const goalsWithLinks = await Promise.all(
-          (data || []).map(async (goal) => {
-            const { data: links } = await supabase
+        const goals = data || []
+        const goalIds = goals.map(g => g.id)
+
+        let goalLinksMap = {}
+        let taskLinksMap = {}
+
+        if (goalIds.length > 0) {
+          // Batch-fetch all goal links and task links in 2 queries
+          const [goalLinksResult, taskLinksResult] = await Promise.all([
+            supabase
               .from('goal_personal_goal_links')
-              .select('goal_id')
-              .eq('personal_goal_id', goal.id)
-
-            // Fetch linked tasks via junction table
-            const { data: taskLinks } = await supabase
+              .select('goal_id, personal_goal_id')
+              .in('personal_goal_id', goalIds),
+            supabase
               .from('task_personal_goal_links')
-              .select('task_id')
-              .eq('personal_goal_id', goal.id)
+              .select('task_id, personal_goal_id')
+              .in('personal_goal_id', goalIds)
+          ])
 
-            let linkedTasks = []
-            const taskLinkIds = (taskLinks || []).map(l => l.task_id)
-            if (taskLinkIds.length > 0) {
-              const { data: tasksData } = await supabase
-                .from('tasks')
-                .select('id, title, status, due_date, completed_at')
-                .in('id', taskLinkIds)
-              linkedTasks = tasksData || []
-            }
-
-            return {
-              ...goal,
-              linked_goal_ids: (links || []).map(l => l.goal_id),
-              linked_tasks: linkedTasks
-            }
+          // Build goal links map
+          ;(goalLinksResult.data || []).forEach(l => {
+            if (!goalLinksMap[l.personal_goal_id]) goalLinksMap[l.personal_goal_id] = []
+            goalLinksMap[l.personal_goal_id].push(l.goal_id)
           })
-        )
-        setPersonalGoals(goalsWithLinks)
+
+          // Build task links map and collect unique task IDs
+          const allTaskIds = new Set()
+          ;(taskLinksResult.data || []).forEach(l => {
+            if (!taskLinksMap[l.personal_goal_id]) taskLinksMap[l.personal_goal_id] = []
+            taskLinksMap[l.personal_goal_id].push(l.task_id)
+            allTaskIds.add(l.task_id)
+          })
+
+          // Batch-fetch all linked tasks in 1 query
+          let tasksById = {}
+          if (allTaskIds.size > 0) {
+            const { data: tasksData } = await supabase
+              .from('tasks')
+              .select('id, title, status, due_date, completed_at')
+              .in('id', [...allTaskIds])
+            ;(tasksData || []).forEach(t => { tasksById[t.id] = t })
+          }
+
+          // Attach links and tasks to each goal
+          const goalsWithLinks = goals.map(goal => ({
+            ...goal,
+            linked_goal_ids: goalLinksMap[goal.id] || [],
+            linked_tasks: (taskLinksMap[goal.id] || []).map(tid => tasksById[tid]).filter(Boolean)
+          }))
+          setPersonalGoals(goalsWithLinks)
+        } else {
+          setPersonalGoals(goals)
+        }
       }
     } catch (err) {
       console.error('Error fetching personal goals:', err)

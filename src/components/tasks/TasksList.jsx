@@ -7,13 +7,14 @@ import Button from '../common/Button'
 import LoadingSpinner from '../common/LoadingSpinner'
 
 export default function TasksList() {
-  const { tasks, todoTasks, inProgressTasks, doneTasks, loading, createTask, updateTask, deleteTask, reorderTasks } = useTasks()
+  const { tasks, standardTasks, monthlyTemplates, todoTasks, inProgressTasks, doneTasks, loading, createTask, updateTask, deleteTask, reorderTasks } = useTasks()
   const { members } = useTeam()
   const [showEditor, setShowEditor] = useState(false)
   const [editingTask, setEditingTask] = useState(null)
   const [view, setView] = useState('list')
   const [showRankControls, setShowRankControls] = useState(true)
   const [hideCompleted, setHideCompleted] = useState(true)
+  const [taskMode, setTaskMode] = useState('standard') // 'standard' | 'monthly'
 
   function openCreate() {
     setEditingTask(null)
@@ -29,6 +30,10 @@ export default function TasksList() {
     if (editingTask) {
       await updateTask(editingTask.id, data)
     } else {
+      // When in monthly mode, auto-set is_monthly
+      if (taskMode === 'monthly') {
+        data.is_monthly = true
+      }
       await createTask(data)
     }
   }
@@ -97,15 +102,18 @@ export default function TasksList() {
     return new Date(a.due_date) - new Date(b.due_date)
   }
 
+  // Choose which tasks to show based on mode
+  const activeTasks = taskMode === 'monthly' ? monthlyTemplates : standardTasks
+
   // Filter completed tasks
-  const visibleTasks = hideCompleted ? tasks.filter(t => t.status !== 'done') : tasks
-  const visibleTodoTasks = [...todoTasks].sort(sortByDueDate)
-  const visibleInProgressTasks = [...inProgressTasks].sort(sortByDueDate)
-  const visibleDoneTasks = hideCompleted ? [] : [...doneTasks].sort(sortByDueDate)
+  const visibleTasks = hideCompleted ? activeTasks.filter(t => t.status !== 'done') : activeTasks
+  const visibleTodoTasks = activeTasks.filter(t => t.status === 'todo').sort(sortByDueDate)
+  const visibleInProgressTasks = activeTasks.filter(t => t.status === 'in_progress').sort(sortByDueDate)
+  const visibleDoneTasks = hideCompleted ? [] : activeTasks.filter(t => t.status === 'done').sort(sortByDueDate)
 
   const sortedTasks = [...visibleTasks].sort(sortByDueDate)
-  const totalCount = tasks.length
-  const hiddenCount = tasks.length - visibleTasks.length
+  const totalCount = activeTasks.length
+  const hiddenCount = activeTasks.length - visibleTasks.length
 
   return (
     <div>
@@ -117,6 +125,25 @@ export default function TasksList() {
           </p>
         </div>
         <div className="flex gap-2 items-center">
+          {/* Task mode toggle */}
+          <div className="flex bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
+            <button
+              onClick={() => setTaskMode('standard')}
+              className={`px-3 py-1 rounded text-sm font-medium ${
+                taskMode === 'standard' ? 'bg-white dark:bg-gray-600 shadow-sm' : 'text-gray-600 dark:text-gray-300'
+              }`}
+            >
+              Tasks
+            </button>
+            <button
+              onClick={() => setTaskMode('monthly')}
+              className={`px-3 py-1 rounded text-sm font-medium ${
+                taskMode === 'monthly' ? 'bg-white dark:bg-gray-600 shadow-sm' : 'text-gray-600 dark:text-gray-300'
+              }`}
+            >
+              Monthly Tasks
+            </button>
+          </div>
           <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 cursor-pointer">
             <input
               type="checkbox"
@@ -145,15 +172,20 @@ export default function TasksList() {
             </button>
           </div>
           <Button onClick={openCreate}>
-            + New Task
+            + New {taskMode === 'monthly' ? 'Monthly ' : ''}Task
           </Button>
         </div>
       </div>
 
-      {tasks.length === 0 ? (
+      {activeTasks.length === 0 ? (
         <div className="card text-center text-gray-500 dark:text-gray-400 py-12">
-          <p className="mb-4">No tasks yet. Create your first task!</p>
-          <Button onClick={openCreate}>+ New Task</Button>
+          <p className="mb-4">
+            {taskMode === 'monthly'
+              ? 'No monthly tasks yet. Monthly tasks auto-create a new copy each month.'
+              : 'No tasks yet. Create your first task!'
+            }
+          </p>
+          <Button onClick={openCreate}>+ New {taskMode === 'monthly' ? 'Monthly ' : ''}Task</Button>
         </div>
       ) : view === 'kanban' ? (
         /* Kanban View */
@@ -175,6 +207,7 @@ export default function TasksList() {
                   onToggleShare={handleToggleShare}
                   hideNotes={true}
                   members={members}
+                  showMonthlyBadge={taskMode === 'monthly'}
                 />
               ))}
             </div>
@@ -197,6 +230,7 @@ export default function TasksList() {
                   onToggleShare={handleToggleShare}
                   hideNotes={true}
                   members={members}
+                  showMonthlyBadge={taskMode === 'monthly'}
                 />
               ))}
             </div>
@@ -220,6 +254,7 @@ export default function TasksList() {
                     onToggleShare={handleToggleShare}
                     hideNotes={true}
                     members={members}
+                    showMonthlyBadge={taskMode === 'monthly'}
                   />
                 ))}
               </div>
@@ -243,6 +278,7 @@ export default function TasksList() {
               isFirst={index === 0}
               isLast={index === sortedTasks.length - 1}
               members={members}
+              showMonthlyBadge={taskMode === 'monthly'}
             />
           ))}
         </div>
@@ -254,6 +290,7 @@ export default function TasksList() {
         isOpen={showEditor}
         onClose={() => setShowEditor(false)}
         onSave={handleSave}
+        isMonthlyMode={taskMode === 'monthly'}
       />
     </div>
   )

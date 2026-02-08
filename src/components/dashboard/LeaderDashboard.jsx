@@ -3,8 +3,9 @@ import { useTeam } from '../../contexts/TeamContext'
 import { supabase } from '../../lib/supabase'
 import GoalCard from './GoalCard'
 import MemberViewDashboard from './MemberViewDashboard'
+import GoalFormModal from './GoalFormModal'
+import CategoryManagementModal from './CategoryManagementModal'
 import Button from '../common/Button'
-import Modal from '../common/Modal'
 import LoadingSpinner from '../common/LoadingSpinner'
 
 const categoryColors = {
@@ -46,11 +47,6 @@ export default function LeaderDashboard() {
   const [dashboardView, setDashboardView] = useState('goals')
   const [memberTasks, setMemberTasks] = useState({})
   const [memberNotes, setMemberNotes] = useState({})
-
-  // Category management state
-  const [newCategoryName, setNewCategoryName] = useState('')
-  const [editingCategory, setEditingCategory] = useState(null)
-  const [editCategoryName, setEditCategoryName] = useState('')
 
   // Inline linked task editing state
   const [editingLinkedTask, setEditingLinkedTask] = useState(null)
@@ -142,7 +138,7 @@ export default function LeaderDashboard() {
       const [tasksResult, notesResult] = await Promise.all([
         supabase
           .from('tasks')
-          .select('id, title, status, due_date, completed_at, user_id')
+          .select('id, title, status, due_date, completed_at, user_id, is_monthly, monthly_source_id, monthly_month')
           .eq('team_id', currentTeam.id)
           .eq('shared_to_dashboard', true),
         supabase
@@ -173,13 +169,11 @@ export default function LeaderDashboard() {
       tasks.forEach(task => {
         const assignees = assigneesMap[task.id] || []
         if (assignees.length > 0) {
-          // Task has assignees - show under each assigned member
           assignees.forEach(assigneeId => {
             if (!tasksByMember[assigneeId]) tasksByMember[assigneeId] = []
             tasksByMember[assigneeId].push(task)
           })
         } else {
-          // No assignees - show under creator
           if (!tasksByMember[task.user_id]) tasksByMember[task.user_id] = []
           tasksByMember[task.user_id].push(task)
         }
@@ -277,28 +271,6 @@ export default function LeaderDashboard() {
     )
   }
 
-  // Category management functions
-  async function handleAddCategory(e) {
-    e.preventDefault()
-    if (!newCategoryName.trim()) return
-    await createCategory(newCategoryName.trim(), 'gray')
-    setNewCategoryName('')
-  }
-
-  async function handleUpdateCategory(e) {
-    e.preventDefault()
-    if (!editCategoryName.trim() || !editingCategory) return
-    await updateCategory(editingCategory.id, { name: editCategoryName.trim() })
-    setEditingCategory(null)
-    setEditCategoryName('')
-  }
-
-  async function handleDeleteCategory(categoryToDelete) {
-    if (confirm(`Delete "${categoryToDelete.name}"? Goals in this category will become uncategorized.`)) {
-      await deleteCategory(categoryToDelete.id)
-    }
-  }
-
   // Inline linked task editing functions
   function openLinkedTaskEdit(task) {
     setEditingLinkedTask(task)
@@ -326,7 +298,6 @@ export default function LeaderDashboard() {
       due_date: dateToNoonUTC(linkedEditDueDate)
     }
 
-    // Handle completed_at
     if (linkedEditStatus === 'done' && editingLinkedTask.status !== 'done') {
       updates.completed_at = new Date().toISOString()
     } else if (linkedEditStatus !== 'done' && editingLinkedTask.status === 'done') {
@@ -338,7 +309,6 @@ export default function LeaderDashboard() {
       .update(updates)
       .eq('id', editingLinkedTask.id)
 
-    // Update assignees (replace-all pattern)
     await supabase
       .from('task_assignees')
       .delete()
@@ -546,207 +516,32 @@ export default function LeaderDashboard() {
       )}
 
       {/* Goal Modal */}
-      <Modal
+      <GoalFormModal
         isOpen={showModal}
-        onClose={() => { setShowModal(false); resetForm(); }}
-        title={editingGoal ? 'Edit Goal' : 'Create Goal'}
-        footer={
-          <>
-            <Button variant="secondary" onClick={() => { setShowModal(false); resetForm(); }}>
-              Cancel
-            </Button>
-            <Button onClick={handleSubmit}>
-              {editingGoal ? 'Save Changes' : 'Create Goal'}
-            </Button>
-          </>
-        }
-      >
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Title
-            </label>
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className="input"
-              placeholder="Enter goal title..."
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Description (optional)
-            </label>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              className="input min-h-[80px]"
-              placeholder="Add more details..."
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Due Date (optional)
-              </label>
-              <input
-                type="date"
-                value={dueDate}
-                onChange={(e) => setDueDate(e.target.value)}
-                className="input"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Category (optional)
-              </label>
-              <select
-                value={categoryId}
-                onChange={(e) => setCategoryId(e.target.value)}
-                className="input"
-              >
-                <option value="">No category</option>
-                {categories.map(cat => (
-                  <option key={cat.id} value={cat.id}>{cat.name}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Assign to Members
-            </label>
-            <div className="flex flex-wrap gap-2 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-              {members.length === 0 ? (
-                <span className="text-gray-500 dark:text-gray-400 text-sm">No team members yet</span>
-              ) : (
-                members.map(member => (
-                  <button
-                    key={member.id}
-                    type="button"
-                    onClick={() => toggleMember(member.id)}
-                    className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
-                      assignedMembers.includes(member.id)
-                        ? 'bg-purple-600 text-white'
-                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-600 dark:text-gray-300 dark:hover:bg-gray-500'
-                    }`}
-                  >
-                    {member.display_name}
-                  </button>
-                ))
-              )}
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Notes (optional)
-            </label>
-            <textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              className="input min-h-[100px]"
-              placeholder="Add notes for this goal..."
-            />
-          </div>
-
-          <div className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              id="showNotes"
-              checked={showNotes}
-              onChange={(e) => setShowNotes(e.target.checked)}
-              className="w-4 h-4 text-primary-600 rounded border-gray-300 focus:ring-primary-500"
-            />
-            <label htmlFor="showNotes" className="text-sm text-gray-700 dark:text-gray-300">
-              Show notes expanded by default
-            </label>
-          </div>
-        </form>
-      </Modal>
+        onClose={() => setShowModal(false)}
+        editingGoal={editingGoal}
+        title={title} setTitle={setTitle}
+        description={description} setDescription={setDescription}
+        dueDate={dueDate} setDueDate={setDueDate}
+        notes={notes} setNotes={setNotes}
+        showNotes={showNotes} setShowNotes={setShowNotes}
+        assignedMembers={assignedMembers} toggleMember={toggleMember}
+        categoryId={categoryId} setCategoryId={setCategoryId}
+        categories={categories}
+        members={members}
+        onSubmit={handleSubmit}
+        onReset={resetForm}
+      />
 
       {/* Category Management Modal */}
-      <Modal
+      <CategoryManagementModal
         isOpen={showCategoryModal}
-        onClose={() => { setShowCategoryModal(false); setEditingCategory(null); setEditCategoryName(''); }}
-        title="Manage Categories"
-        footer={
-          <Button variant="secondary" onClick={() => { setShowCategoryModal(false); setEditingCategory(null); setEditCategoryName(''); }}>
-            Done
-          </Button>
-        }
-      >
-        <div className="space-y-4">
-          {/* Add new category */}
-          <form onSubmit={handleAddCategory} className="flex gap-2">
-            <input
-              type="text"
-              value={newCategoryName}
-              onChange={(e) => setNewCategoryName(e.target.value)}
-              className="input flex-1"
-              placeholder="New category name..."
-            />
-            <Button type="submit" disabled={!newCategoryName.trim()}>
-              Add
-            </Button>
-          </form>
-
-          {/* List existing categories */}
-          <div className="space-y-2">
-            {categories.length === 0 ? (
-              <p className="text-gray-500 dark:text-gray-400 text-sm text-center py-4">No categories yet</p>
-            ) : (
-              categories.map(cat => {
-                const colors = categoryColors[cat.color] || categoryColors.gray
-                return (
-                  <div key={cat.id} className={`${colors.bg} p-3 rounded-lg flex items-center gap-2`}>
-                    {editingCategory?.id === cat.id ? (
-                      <form onSubmit={handleUpdateCategory} className="flex-1 flex gap-2">
-                        <input
-                          type="text"
-                          value={editCategoryName}
-                          onChange={(e) => setEditCategoryName(e.target.value)}
-                          className="input flex-1"
-                          autoFocus
-                        />
-                        <Button type="submit" size="small">Save</Button>
-                        <Button type="button" variant="ghost" size="small" onClick={() => { setEditingCategory(null); setEditCategoryName(''); }}>
-                          Cancel
-                        </Button>
-                      </form>
-                    ) : (
-                      <>
-                        <span className={`flex-1 font-medium ${colors.header}`}>{cat.name}</span>
-                        <Button
-                          variant="ghost"
-                          size="small"
-                          onClick={() => { setEditingCategory(cat); setEditCategoryName(cat.name); }}
-                        >
-                          Edit
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="small"
-                          className="text-red-600 hover:bg-red-50"
-                          onClick={() => handleDeleteCategory(cat)}
-                        >
-                          Delete
-                        </Button>
-                      </>
-                    )}
-                  </div>
-                )
-              })
-            )}
-          </div>
-        </div>
-      </Modal>
+        onClose={() => setShowCategoryModal(false)}
+        categories={categories}
+        createCategory={createCategory}
+        updateCategory={updateCategory}
+        deleteCategory={deleteCategory}
+      />
     </div>
   )
 }

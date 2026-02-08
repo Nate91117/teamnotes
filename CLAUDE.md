@@ -11,7 +11,7 @@ npm run build  # Production build to ./dist
 ```
 
 ## What This App Is
-A team collaboration app where **leaders** create team goals and **members** manage personal tasks, notes, and personal goals that can link to team goals. Built with React 18 + Vite + Supabase (PostgreSQL) + Tailwind CSS. Deployed to GitHub Pages via GitHub Actions on push to `master`.
+A team collaboration app where **leaders** create team goals, assign reports, and manage monthly recurring tasks, while **members** manage personal tasks, notes, and personal goals that can link to team goals. Built with React 18 + Vite + Supabase (PostgreSQL) + Tailwind CSS. Deployed to GitHub Pages via GitHub Actions on push to `master`.
 
 ## Architecture Overview
 
@@ -25,7 +25,7 @@ A team collaboration app where **leaders** create team goals and **members** man
 BrowserRouter (basename="/teamnotes")
   AuthProvider (user session, profile, auth methods)
     TeamProvider (teams, goals, members, categories)
-      Pages → use hooks: useTasks(), useNotes(), usePersonalGoals()
+      Pages → use hooks: useTasks(), useNotes(), usePersonalGoals(), useReports()
 ```
 
 ### Key Directories
@@ -34,8 +34,9 @@ src/
   components/
     auth/       - LoginForm, SignupForm, ProtectedRoute
     common/     - Layout, Button, Modal, LoadingSpinner
-    dashboard/  - LeaderDashboard (610 lines), MemberDashboard, MemberViewDashboard, GoalCard
-    tasks/      - TasksList (kanban+list views), TaskCard, TaskEditor
+    dashboard/  - LeaderDashboard, MemberDashboard, MemberViewDashboard, GoalCard,
+                  GoalFormModal, CategoryManagementModal, ReportsDashboard
+    tasks/      - TasksList (kanban+list views, standard/monthly toggle), TaskCard, TaskEditor
     notes/      - NotesList, NoteCard, NoteEditor
     goals/      - PersonalGoalsList, PersonalGoalCard, PersonalGoalEditor
     team/       - TeamSettings, MemberList, InviteMember
@@ -44,9 +45,10 @@ src/
     AuthContext.jsx  - Auth state, signIn/signUp/signOut, profile management
     TeamContext.jsx  - Teams, goals, members, categories, realtime subscriptions
   hooks/
-    useTasks.js          - Tasks CRUD, multi-assignee, personal goal links
+    useTasks.js          - Tasks CRUD, multi-assignee, personal goal links, monthly tasks
     useNotes.js          - Notes CRUD, task linking
-    usePersonalGoals.js  - Personal goals CRUD, year filtering, task/goal links
+    usePersonalGoals.js  - Personal goals CRUD, year filtering, task/goal links (batch queries)
+    useReports.js        - Reports CRUD (leader-only feature)
     useTeam.js           - Wrapper for TeamContext
   pages/
     Login.jsx, Signup.jsx, Dashboard.jsx, MyTasks.jsx,
@@ -70,11 +72,12 @@ src/
 - **teams** - Team containers (name, leader_id)
 - **team_members** - Membership junction (team_id, user_id, role: leader|member)
 - **goals** - Team goals (title, description, status, due_date, category_id, sort_order, notes, show_notes)
-- **tasks** - User tasks (title, description, status: todo|in_progress|done, due_date, linked_goal_id, shared_to_dashboard, notes, sort_order, completed_at)
+- **tasks** - User tasks (title, description, status: todo|in_progress|done, due_date, linked_goal_id, shared_to_dashboard, notes, sort_order, completed_at, is_monthly, monthly_source_id, monthly_month)
 - **notes** - User notes (title, content, linked_goal_id, shared_to_dashboard)
 - **personal_goals** - Personal goals (title, description, status, year, sort_order)
 - **categories** - Goal categories (name, color, sort_order)
 - **invitations** - Email invites (email, team_id, status: pending|accepted)
+- **reports** - Leader-assigned report items (title, team_id, assigned_user_id, created_by)
 
 ### Junction Tables (Many-to-Many)
 - **task_assignees** (task_id, user_id)
@@ -88,6 +91,21 @@ src/
 - `supabase-personal-goals-migration.sql` - Personal goals feature
 - `supabase-task-enhancements-migration.sql` - Task improvements
 - `supabase-fix-rls.sql` - Row Level Security fixes
+- `supabase-reports-migration.sql` - Reports table
+- `supabase-monthly-tasks-migration.sql` - Monthly task columns on tasks table
+
+### Monthly Tasks
+- Tasks with `is_monthly=true` and `monthly_source_id=null` are **templates**
+- Templates auto-create monthly **instances** (`monthly_source_id` points to template, `monthly_month` = 'YYYY-MM')
+- `ensureMonthlyTasks()` runs on load to create current month's instances
+- Monthly instances appear on the "By Member" dashboard only within 7 days of month-end
+- Dashboard has All/Standard/Monthly filter toggle
+
+### Reports Feature
+- Leader-only feature, 3rd tab on Leader Dashboard (Goals | By Member | Reports)
+- Simple items: title assigned to a team member
+- Grouped by member in the dashboard view (same visual pattern as "By Member")
+- Inline create/edit/delete
 
 ## Code Patterns & Conventions
 
@@ -121,16 +139,13 @@ await supabase.from('junction').insert(newIds.map(...))
 - Responsive: `md:grid-cols-2`, `md:grid-cols-3` patterns
 
 ### Roles
-- **Leader** (`isLeader` from TeamContext): Can manage goals, categories, members, see all shared items
+- **Leader** (`isLeader` from TeamContext): Can manage goals, categories, members, reports, see all shared items
 - **Member**: Can manage own tasks/notes/personal goals, share items to dashboard
 
 ## Known Issues & Technical Debt
 - Auth uses plaintext passwords (not Supabase Auth) - stored in profiles table
 - Supabase credentials hardcoded in `src/lib/supabase.js` (anon key is public, but still)
-- N+1 queries in `usePersonalGoals` (fetches task links per goal)
-- `LeaderDashboard.jsx` is 610 lines - could be split
 - No test coverage
-- Console.log debugging statements remain in TeamContext and some hooks
 - `test-queries.mjs` at project root is a debug script (not production code)
 
 ## Deployment

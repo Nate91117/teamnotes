@@ -35,7 +35,7 @@ function isDateOverdue(dueDateStr) {
   return dueStr < todayStr
 }
 
-export default function TaskCard({ task, onEdit, onDelete, onStatusChange, onToggleShare, onMoveUp, onMoveDown, isFirst, isLast, showRankControls = false, hideNotes = false, members = [] }) {
+export default function TaskCard({ task, onEdit, onDelete, onStatusChange, onToggleShare, onMoveUp, onMoveDown, isFirst, isLast, showRankControls = false, hideNotes = false, members = [], showMonthlyBadge = false }) {
   const formattedDate = task.due_date
     ? new Date(task.due_date).toLocaleDateString('en-US', {
         month: 'short',
@@ -82,6 +82,9 @@ export default function TaskCard({ task, onEdit, onDelete, onStatusChange, onTog
                 </h3>
                 {task.goals && (
                   <span className="badge badge-blue">{task.goals.title}</span>
+                )}
+                {showMonthlyBadge && task.is_monthly && (
+                  <span className="badge bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300">Monthly</span>
                 )}
                 {task.shared_to_dashboard && (
                   <span className="badge badge-green">Shared</span>

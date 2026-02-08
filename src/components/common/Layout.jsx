@@ -14,7 +14,7 @@ export default function Layout({ children }) {
     { to: '/notes', label: 'My Notes' },
     { to: '/tasks', label: 'My Tasks' },
     { to: '/personal-goals', label: 'My Goals' },
-    ...(isLeader ? [{ to: '/team', label: 'Team' }] : [])
+    ...(isLeader ? [{ to: '/reports', label: 'Reports' }, { to: '/team', label: 'Team' }] : [])
   ]
 
   const isSettingsActive = location.pathname === '/settings'

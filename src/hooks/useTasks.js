@@ -3,6 +3,11 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { useTeam } from '../contexts/TeamContext'
 
+function getCurrentMonth() {
+  const now = new Date()
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+}
+
 export function useTasks() {
   const { user } = useAuth()
   const { currentTeam } = useTeam()
@@ -11,7 +16,7 @@ export function useTasks() {
 
   useEffect(() => {
     if (user && currentTeam) {
-      fetchTasks()
+      fetchTasks().then(() => ensureMonthlyTasks())
       const unsubscribe = subscribeToTasks()
       return () => unsubscribe?.()
     } else {
@@ -111,7 +116,8 @@ export function useTasks() {
     linked_personal_goal_ids = [],
     assignee_ids = [],
     shared_to_dashboard = false,
-    due_date = null
+    due_date = null,
+    is_monthly = false
   }) {
     if (!user || !currentTeam) return { error: 'Not authenticated or no team' }
 
@@ -126,7 +132,8 @@ export function useTasks() {
         status,
         linked_goal_id,
         shared_to_dashboard,
-        due_date
+        due_date,
+        is_monthly
       })
       .select(`
         *,
@@ -244,12 +251,117 @@ export function useTasks() {
     setTasks(reorderedTasks.map((t, i) => ({ ...t, sort_order: i })))
   }
 
+  // Monthly task: create an instance (copy) for the current month
+  async function createMonthlyInstance(sourceTask) {
+    if (!user || !currentTeam) return { error: 'Not authenticated or no team' }
+
+    const currentMonth = getCurrentMonth()
+
+    const { data, error } = await supabase
+      .from('tasks')
+      .insert({
+        user_id: sourceTask.user_id,
+        team_id: currentTeam.id,
+        title: sourceTask.title,
+        description: sourceTask.description || '',
+        notes: sourceTask.notes || '',
+        status: 'todo',
+        linked_goal_id: sourceTask.linked_goal_id || null,
+        shared_to_dashboard: sourceTask.shared_to_dashboard || false,
+        due_date: sourceTask.due_date || null,
+        is_monthly: true,
+        monthly_source_id: sourceTask.id,
+        monthly_month: currentMonth
+      })
+      .select()
+      .single()
+
+    if (!error && data) {
+      // Copy assignees from source task
+      const sourceAssignees = sourceTask.assignees || []
+      if (sourceAssignees.length > 0) {
+        await supabase
+          .from('task_assignees')
+          .insert(sourceAssignees.map(uid => ({
+            task_id: data.id,
+            user_id: uid
+          })))
+      }
+    }
+
+    return { data, error }
+  }
+
+  // Ensure monthly tasks have instances for the current month
+  async function ensureMonthlyTasks() {
+    if (!user || !currentTeam) return
+
+    const currentMonth = getCurrentMonth()
+
+    try {
+      // Find monthly templates (is_monthly=true, monthly_source_id=null) for this user+team
+      const { data: templates } = await supabase
+        .from('tasks')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('team_id', currentTeam.id)
+        .eq('is_monthly', true)
+        .is('monthly_source_id', null)
+
+      if (!templates || templates.length === 0) return
+
+      // Check which templates already have instances for this month
+      const templateIds = templates.map(t => t.id)
+      const { data: existingInstances } = await supabase
+        .from('tasks')
+        .select('monthly_source_id')
+        .in('monthly_source_id', templateIds)
+        .eq('monthly_month', currentMonth)
+
+      const existingSourceIds = new Set((existingInstances || []).map(i => i.monthly_source_id))
+
+      // Also fetch assignees for templates that need instances
+      const templatesToCreate = templates.filter(t => !existingSourceIds.has(t.id))
+      if (templatesToCreate.length === 0) return
+
+      const tIds = templatesToCreate.map(t => t.id)
+      let assigneesMap = {}
+      if (tIds.length > 0) {
+        const { data: assigneesData } = await supabase
+          .from('task_assignees')
+          .select('task_id, user_id')
+          .in('task_id', tIds)
+        ;(assigneesData || []).forEach(a => {
+          if (!assigneesMap[a.task_id]) assigneesMap[a.task_id] = []
+          assigneesMap[a.task_id].push(a.user_id)
+        })
+      }
+
+      // Create instances for templates that don't have one yet
+      for (const template of templatesToCreate) {
+        await createMonthlyInstance({ ...template, assignees: assigneesMap[template.id] || [] })
+      }
+
+      await fetchTasks()
+    } catch (err) {
+      console.error('Error ensuring monthly tasks:', err)
+    }
+  }
+
+  // Filter helpers
+  const standardTasks = tasks.filter(t => !t.is_monthly)
+  const monthlyTemplates = tasks.filter(t => t.is_monthly && !t.monthly_source_id)
+  const monthlyInstances = tasks.filter(t => t.is_monthly && t.monthly_source_id)
+
   const todoTasks = tasks.filter(t => t.status === 'todo').sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0))
   const inProgressTasks = tasks.filter(t => t.status === 'in_progress').sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0))
   const doneTasks = tasks.filter(t => t.status === 'done').sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0))
 
   return {
     tasks,
+    standardTasks,
+    monthlyTemplates,
+    monthlyInstances,
     todoTasks,
     inProgressTasks,
     doneTasks,
@@ -258,6 +370,8 @@ export function useTasks() {
     updateTask,
     deleteTask,
     reorderTasks,
+    createMonthlyInstance,
+    ensureMonthlyTasks,
     refreshTasks: fetchTasks
   }
 }

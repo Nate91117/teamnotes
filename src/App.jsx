@@ -10,6 +10,7 @@ import MyTasks from './pages/MyTasks'
 import TeamSettings from './pages/TeamSettings'
 import PersonalGoals from './pages/PersonalGoals'
 import Settings from './pages/Settings'
+import Reports from './pages/Reports'
 
 function App() {
   return (
@@ -41,6 +42,11 @@ function App() {
           <Route path="/personal-goals" element={
             <ProtectedRoute>
               <PersonalGoals />
+            </ProtectedRoute>
+          } />
+          <Route path="/reports" element={
+            <ProtectedRoute>
+              <Reports />
             </ProtectedRoute>
           } />
           <Route path="/settings" element={
