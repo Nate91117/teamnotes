@@ -85,14 +85,8 @@ src/
 - **task_personal_goal_links** (task_id, personal_goal_id)
 - **goal_personal_goal_links** (goal_id, personal_goal_id)
 
-### SQL Migration Files
-- `supabase-schema.sql` - Base schema
-- `supabase-categories-migration.sql` - Categories feature
-- `supabase-personal-goals-migration.sql` - Personal goals feature
-- `supabase-task-enhancements-migration.sql` - Task improvements
-- `supabase-fix-rls.sql` - Row Level Security fixes
-- `supabase-reports-migration.sql` - Reports table
-- `supabase-monthly-tasks-migration.sql` - Monthly task columns on tasks table
+### SQL Reference
+- `supabase-schema.sql` - Base schema reference (migration files removed after being applied)
 
 ### Monthly Tasks
 - Tasks with `is_monthly=true` and `monthly_source_id=null` are **templates**
