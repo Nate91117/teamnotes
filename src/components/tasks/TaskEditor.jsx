@@ -151,6 +151,7 @@ export default function TaskEditor({ task, isOpen, onClose, onSave, isMonthlyMod
             >
               <option value="todo">To Do</option>
               <option value="in_progress">In Progress</option>
+              <option value="on_hold">On Hold</option>
               <option value="done">Done</option>
             </select>
           </div>

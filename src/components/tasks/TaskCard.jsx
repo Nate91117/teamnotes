@@ -3,12 +3,14 @@ import Button from '../common/Button'
 const statusColors = {
   todo: 'badge-gray',
   in_progress: 'badge-yellow',
+  on_hold: 'badge-orange',
   done: 'badge-green'
 }
 
 const statusLabels = {
   todo: 'To Do',
   in_progress: 'In Progress',
+  on_hold: 'On Hold',
   done: 'Done'
 }
 
@@ -191,6 +193,14 @@ export default function TaskCard({ task, onEdit, onDelete, onStatusChange, onTog
                 className="text-xs text-yellow-600 hover:text-yellow-700"
               >
                 Start Working
+              </button>
+            )}
+            {task.status !== 'on_hold' && (
+              <button
+                onClick={() => onStatusChange(task.id, 'on_hold')}
+                className="text-xs text-orange-600 hover:text-orange-700"
+              >
+                Put On Hold
               </button>
             )}
             {task.status !== 'done' && (

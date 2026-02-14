@@ -1,16 +1,20 @@
 import { useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import Button from '../common/Button'
+import TaskEditor from '../tasks/TaskEditor'
+import Modal from '../common/Modal'
 
 const statusColors = {
   todo: 'badge-gray',
   in_progress: 'badge-yellow',
+  on_hold: 'badge-orange',
   done: 'badge-green'
 }
 
 const statusLabels = {
   todo: 'To Do',
   in_progress: 'In Progress',
+  on_hold: 'On Hold',
   done: 'Done'
 }
 
@@ -50,12 +54,15 @@ function dateToNoonUTC(dateStr) {
 
 export default function MemberViewDashboard({ members, memberTasks, memberNotes, onTaskUpdate }) {
   const [hideDone, setHideDone] = useState(true)
+  const [hideOnHold, setHideOnHold] = useState(false)
   const [editingTask, setEditingTask] = useState(null)
   const [editTitle, setEditTitle] = useState('')
   const [editStatus, setEditStatus] = useState('todo')
   const [editDueDate, setEditDueDate] = useState('')
   const [saving, setSaving] = useState(false)
   const [taskFilter, setTaskFilter] = useState('all') // 'all' | 'standard' | 'monthly'
+  const [fullEditTask, setFullEditTask] = useState(null)
+  const [showFullEditor, setShowFullEditor] = useState(false)
 
   if (!members || members.length === 0) {
     return (
@@ -106,6 +113,64 @@ export default function MemberViewDashboard({ members, memberTasks, memberNotes,
     if (onTaskUpdate) onTaskUpdate()
   }
 
+  async function fetchFullTask(taskId) {
+    const { data: task } = await supabase
+      .from('tasks')
+      .select('*, goals (id, title)')
+      .eq('id', taskId)
+      .single()
+
+    if (!task) return
+
+    const [assigneesResult, pgLinksResult] = await Promise.all([
+      supabase.from('task_assignees').select('user_id').eq('task_id', taskId),
+      supabase.from('task_personal_goal_links').select('personal_goal_id').eq('task_id', taskId)
+    ])
+
+    const fullTask = {
+      ...task,
+      assignees: (assigneesResult.data || []).map(a => a.user_id),
+      linked_personal_goal_ids: (pgLinksResult.data || []).map(l => l.personal_goal_id)
+    }
+
+    setFullEditTask(fullTask)
+    setShowFullEditor(true)
+  }
+
+  async function handleFullEditSave(data) {
+    if (!fullEditTask) return
+
+    const { assignee_ids, linked_personal_goal_ids, ...dbUpdates } = data
+
+    if (dbUpdates.status === 'done' && fullEditTask.status !== 'done') {
+      dbUpdates.completed_at = new Date().toISOString()
+    } else if (dbUpdates.status !== 'done' && fullEditTask.status === 'done') {
+      dbUpdates.completed_at = null
+    }
+
+    await supabase.from('tasks').update(dbUpdates).eq('id', fullEditTask.id)
+
+    // Replace assignees
+    await supabase.from('task_assignees').delete().eq('task_id', fullEditTask.id)
+    if (assignee_ids?.length > 0) {
+      await supabase.from('task_assignees').insert(
+        assignee_ids.map(uid => ({ task_id: fullEditTask.id, user_id: uid }))
+      )
+    }
+
+    // Replace personal goal links
+    await supabase.from('task_personal_goal_links').delete().eq('task_id', fullEditTask.id)
+    if (linked_personal_goal_ids?.length > 0) {
+      await supabase.from('task_personal_goal_links').insert(
+        linked_personal_goal_ids.map(pgId => ({ task_id: fullEditTask.id, personal_goal_id: pgId }))
+      )
+    }
+
+    setShowFullEditor(false)
+    setFullEditTask(null)
+    if (onTaskUpdate) onTaskUpdate()
+  }
+
   // Filter tasks based on monthly filter and visibility rules
   function filterTasks(allTasks) {
     return allTasks.filter(task => {
@@ -134,6 +199,15 @@ export default function MemberViewDashboard({ members, memberTasks, memberNotes,
             className="w-4 h-4 text-primary-600 rounded border-gray-300 focus:ring-primary-500"
           />
           Hide completed tasks
+        </label>
+        <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={hideOnHold}
+            onChange={(e) => setHideOnHold(e.target.checked)}
+            className="w-4 h-4 text-primary-600 rounded border-gray-300 focus:ring-primary-500"
+          />
+          Hide on hold
         </label>
 
         {/* Task type filter */}
@@ -178,8 +252,9 @@ export default function MemberViewDashboard({ members, memberTasks, memberNotes,
             return new Date(a.due_date) - new Date(b.due_date)
           }
 
-          // Separate active and done tasks, sorted by due date
-          const activeTasks = allTasks.filter(t => t.status !== 'done').sort(sortByDueDate)
+          // Separate active, on-hold, and done tasks, sorted by due date
+          const onHoldTasks = allTasks.filter(t => t.status === 'on_hold').sort(sortByDueDate)
+          const activeTasks = allTasks.filter(t => t.status !== 'done' && (!hideOnHold || t.status !== 'on_hold')).sort(sortByDueDate)
           const doneTasks = allTasks.filter(t => t.status === 'done').sort(sortByDueDate)
           const visibleTasks = hideDone ? activeTasks : [...activeTasks, ...doneTasks]
 
@@ -259,6 +334,7 @@ export default function MemberViewDashboard({ members, memberTasks, memberNotes,
                                     >
                                       <option value="todo">To Do</option>
                                       <option value="in_progress">In Progress</option>
+                                      <option value="on_hold">On Hold</option>
                                       <option value="done">Done</option>
                                     </select>
                                     <input
@@ -298,13 +374,24 @@ export default function MemberViewDashboard({ members, memberTasks, memberNotes,
                               <span className={`flex-1 font-medium text-gray-900 dark:text-white ${isDone ? 'line-through' : ''}`}>
                                 {task.title}
                               </span>
-                              <div className="flex flex-col items-end gap-0.5">
-                                {showDate && (
-                                  <span className={`text-xs ${isOverdue ? 'text-red-600 dark:text-red-400 font-medium' : 'text-gray-500 dark:text-gray-400'}`}>
-                                    {showDate}
-                                    {daysLabel && <span className="ml-1">{daysLabel}</span>}
-                                  </span>
-                                )}
+                              <div className="flex items-center gap-2">
+                                <div className="flex flex-col items-end gap-0.5">
+                                  {showDate && (
+                                    <span className={`text-xs ${isOverdue ? 'text-red-600 dark:text-red-400 font-medium' : 'text-gray-500 dark:text-gray-400'}`}>
+                                      {showDate}
+                                      {daysLabel && <span className="ml-1">{daysLabel}</span>}
+                                    </span>
+                                  )}
+                                </div>
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); fetchFullTask(task.id) }}
+                                  className="p-1 text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
+                                  title="Full edit"
+                                >
+                                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                  </svg>
+                                </button>
                               </div>
                             </div>
                           )
@@ -313,12 +400,14 @@ export default function MemberViewDashboard({ members, memberTasks, memberNotes,
                     </div>
                   )}
 
-                  {/* Hidden done count */}
-                  {hideDone && doneTasks.length > 0 && (
+                  {/* Hidden task counts */}
+                  {(hideDone && doneTasks.length > 0) || (hideOnHold && onHoldTasks.length > 0) ? (
                     <p className="text-xs text-gray-400 dark:text-gray-500">
-                      + {doneTasks.length} completed task{doneTasks.length !== 1 ? 's' : ''} hidden
+                      {hideOnHold && onHoldTasks.length > 0 && `+ ${onHoldTasks.length} on hold task${onHoldTasks.length !== 1 ? 's' : ''} hidden`}
+                      {hideOnHold && onHoldTasks.length > 0 && hideDone && doneTasks.length > 0 && ' | '}
+                      {hideDone && doneTasks.length > 0 && `+ ${doneTasks.length} completed task${doneTasks.length !== 1 ? 's' : ''} hidden`}
                     </p>
-                  )}
+                  ) : null}
 
                   {/* Notes */}
                   {notes.length > 0 && (
@@ -344,6 +433,14 @@ export default function MemberViewDashboard({ members, memberTasks, memberNotes,
           )
         })}
       </div>
+
+      {/* Full Edit Modal */}
+      <TaskEditor
+        task={fullEditTask}
+        isOpen={showFullEditor}
+        onClose={() => { setShowFullEditor(false); setFullEditTask(null) }}
+        onSave={handleFullEditSave}
+      />
     </div>
   )
 }

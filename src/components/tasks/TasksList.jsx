@@ -7,7 +7,7 @@ import Button from '../common/Button'
 import LoadingSpinner from '../common/LoadingSpinner'
 
 export default function TasksList() {
-  const { tasks, standardTasks, monthlyTemplates, todoTasks, inProgressTasks, doneTasks, loading, createTask, updateTask, deleteTask, reorderTasks } = useTasks()
+  const { tasks, standardTasks, monthlyTemplates, todoTasks, inProgressTasks, onHoldTasks, doneTasks, loading, createTask, updateTask, deleteTask, reorderTasks } = useTasks()
   const { members } = useTeam()
   const [showEditor, setShowEditor] = useState(false)
   const [editingTask, setEditingTask] = useState(null)
@@ -109,6 +109,7 @@ export default function TasksList() {
   const visibleTasks = hideCompleted ? activeTasks.filter(t => t.status !== 'done') : activeTasks
   const visibleTodoTasks = activeTasks.filter(t => t.status === 'todo').sort(sortByDueDate)
   const visibleInProgressTasks = activeTasks.filter(t => t.status === 'in_progress').sort(sortByDueDate)
+  const visibleOnHoldTasks = activeTasks.filter(t => t.status === 'on_hold').sort(sortByDueDate)
   const visibleDoneTasks = hideCompleted ? [] : activeTasks.filter(t => t.status === 'done').sort(sortByDueDate)
 
   const sortedTasks = [...visibleTasks].sort(sortByDueDate)
@@ -189,7 +190,7 @@ export default function TasksList() {
         </div>
       ) : view === 'kanban' ? (
         /* Kanban View */
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           {/* To Do Column */}
           <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-4">
             <div className="flex items-center gap-2 mb-4">
@@ -221,6 +222,29 @@ export default function TasksList() {
             </div>
             <div className="space-y-3">
               {visibleInProgressTasks.map((task, index) => (
+                <TaskCard
+                  key={task.id}
+                  task={task}
+                  onEdit={openEdit}
+                  onDelete={handleDelete}
+                  onStatusChange={handleStatusChange}
+                  onToggleShare={handleToggleShare}
+                  hideNotes={true}
+                  members={members}
+                  showMonthlyBadge={taskMode === 'monthly'}
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* On Hold Column */}
+          <div className="bg-orange-50 dark:bg-orange-900/20 rounded-xl p-4">
+            <div className="flex items-center gap-2 mb-4">
+              <h3 className="font-semibold text-orange-700 dark:text-orange-300">On Hold</h3>
+              <span className="badge badge-orange">{visibleOnHoldTasks.length}</span>
+            </div>
+            <div className="space-y-3">
+              {visibleOnHoldTasks.map((task, index) => (
                 <TaskCard
                   key={task.id}
                   task={task}

@@ -355,6 +355,7 @@ export function useTasks() {
 
   const todoTasks = tasks.filter(t => t.status === 'todo').sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0))
   const inProgressTasks = tasks.filter(t => t.status === 'in_progress').sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0))
+  const onHoldTasks = tasks.filter(t => t.status === 'on_hold').sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0))
   const doneTasks = tasks.filter(t => t.status === 'done').sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0))
 
   return {
@@ -364,6 +365,7 @@ export function useTasks() {
     monthlyInstances,
     todoTasks,
     inProgressTasks,
+    onHoldTasks,
     doneTasks,
     loading,
     createTask,

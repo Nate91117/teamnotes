@@ -59,7 +59,7 @@ CREATE TABLE tasks (
   team_id UUID REFERENCES teams ON DELETE CASCADE,
   title TEXT NOT NULL,
   description TEXT,
-  status TEXT NOT NULL DEFAULT 'todo' CHECK (status IN ('todo', 'in_progress', 'done')),
+  status TEXT NOT NULL DEFAULT 'todo' CHECK (status IN ('todo', 'in_progress', 'done', 'on_hold')),
   linked_goal_id UUID REFERENCES goals ON DELETE SET NULL,
   shared_to_dashboard BOOLEAN DEFAULT false,
   due_date TIMESTAMP WITH TIME ZONE,

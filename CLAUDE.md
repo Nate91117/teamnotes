@@ -34,9 +34,9 @@ src/
   components/
     auth/       - LoginForm, SignupForm, ProtectedRoute
     common/     - Layout, Button, Modal, LoadingSpinner
-    dashboard/  - LeaderDashboard, MemberDashboard, MemberViewDashboard, GoalCard,
-                  GoalFormModal, CategoryManagementModal, ReportsDashboard
-    tasks/      - TasksList (kanban+list views, standard/monthly toggle), TaskCard, TaskEditor
+    dashboard/  - LeaderDashboard, MemberDashboard, MemberViewDashboard (inline edit + full TaskEditor modal),
+                  GoalCard, GoalFormModal, CategoryManagementModal, ReportsDashboard
+    tasks/      - TasksList (kanban+list views with 4 columns: To Do/In Progress/On Hold/Done, standard/monthly toggle), TaskCard, TaskEditor
     notes/      - NotesList, NoteCard, NoteEditor
     goals/      - PersonalGoalsList, PersonalGoalCard, PersonalGoalEditor
     team/       - TeamSettings, MemberList, InviteMember
@@ -72,7 +72,7 @@ src/
 - **teams** - Team containers (name, leader_id)
 - **team_members** - Membership junction (team_id, user_id, role: leader|member)
 - **goals** - Team goals (title, description, status, due_date, category_id, sort_order, notes, show_notes)
-- **tasks** - User tasks (title, description, status: todo|in_progress|done, due_date, linked_goal_id, shared_to_dashboard, notes, sort_order, completed_at, is_monthly, monthly_source_id, monthly_month)
+- **tasks** - User tasks (title, description, status: todo|in_progress|done|on_hold, due_date, linked_goal_id, shared_to_dashboard, notes, sort_order, completed_at, is_monthly, monthly_source_id, monthly_month)
 - **notes** - User notes (title, content, linked_goal_id, shared_to_dashboard)
 - **personal_goals** - Personal goals (title, description, status, year, sort_order)
 - **categories** - Goal categories (name, color, sort_order)

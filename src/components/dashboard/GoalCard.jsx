@@ -4,12 +4,14 @@ import Button from '../common/Button'
 const statusColors = {
   todo: 'badge-gray',
   in_progress: 'badge-yellow',
+  on_hold: 'badge-orange',
   done: 'badge-green'
 }
 
 const statusLabels = {
   todo: 'To Do',
   in_progress: 'In Progress',
+  on_hold: 'On Hold',
   done: 'Done'
 }
 
@@ -218,6 +220,7 @@ export default function GoalCard({
                           >
                             <option value="todo">To Do</option>
                             <option value="in_progress">In Progress</option>
+                            <option value="on_hold">On Hold</option>
                             <option value="done">Done</option>
                           </select>
                           <input
