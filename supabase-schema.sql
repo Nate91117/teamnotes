@@ -76,6 +76,16 @@ CREATE TABLE invitations (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- Reports (leader assigns report items to team members)
+CREATE TABLE reports (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  team_id UUID REFERENCES teams ON DELETE CASCADE,
+  title TEXT NOT NULL,
+  assigned_user_id UUID REFERENCES profiles ON DELETE CASCADE,
+  created_by UUID REFERENCES profiles ON DELETE SET NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
 -- Create indexes for better query performance
 CREATE INDEX idx_team_members_user ON team_members(user_id);
 CREATE INDEX idx_team_members_team ON team_members(team_id);
@@ -88,6 +98,8 @@ CREATE INDEX idx_tasks_team ON tasks(team_id);
 CREATE INDEX idx_tasks_goal ON tasks(linked_goal_id);
 CREATE INDEX idx_invitations_email ON invitations(email);
 CREATE INDEX idx_invitations_team ON invitations(team_id);
+CREATE INDEX idx_reports_team ON reports(team_id);
+CREATE INDEX idx_reports_assigned_user ON reports(assigned_user_id);
 
 -- Row Level Security Policies
 
@@ -99,6 +111,7 @@ ALTER TABLE goals ENABLE ROW LEVEL SECURITY;
 ALTER TABLE notes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE tasks ENABLE ROW LEVEL SECURITY;
 ALTER TABLE invitations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE reports ENABLE ROW LEVEL SECURITY;
 
 -- Profiles policies
 CREATE POLICY "Users can view their own profile"
@@ -248,6 +261,13 @@ CREATE POLICY "Leaders can create invitations"
 CREATE POLICY "Users can view their own invitations"
   ON invitations FOR SELECT
   USING (email = (SELECT email FROM profiles WHERE id = auth.uid()));
+
+-- Reports policies
+-- Note: app uses custom auth (not Supabase Auth), so policies use USING (true) to allow anon key access
+CREATE POLICY "Allow all reports access"
+  ON reports FOR ALL
+  USING (true)
+  WITH CHECK (true);
 
 -- Function to handle new user signup and check for invitations
 CREATE OR REPLACE FUNCTION handle_new_user()
