@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { useTasks } from '../../hooks/useTasks'
+import { useAuth } from '../../contexts/AuthContext'
+import { useTeam } from '../../hooks/useTeam'
 
 function getTodayCST() {
   return new Intl.DateTimeFormat('en-CA', {
@@ -78,6 +80,20 @@ function TaskItem({ task, showDate }) {
   )
 }
 
+function TaskGroup({ label, tasks, showDate }) {
+  if (tasks.length === 0) return null
+  return (
+    <div>
+      <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-0.5 px-1">
+        {label}
+      </p>
+      {tasks.map(task => (
+        <TaskItem key={task.id} task={task} showDate={showDate} />
+      ))}
+    </div>
+  )
+}
+
 function Column({ col, isOverdue }) {
   const baseClasses = 'min-w-[150px] max-w-[200px] rounded-xl border p-3 flex flex-col'
   const colorClasses = col.isToday
@@ -98,6 +114,10 @@ function Column({ col, isOverdue }) {
     ? 'bg-red-100 text-red-700 dark:bg-red-800 dark:text-red-200'
     : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'
 
+  const weekly = col.tasks.filter(t => t.is_weekly)
+  const monthly = col.tasks.filter(t => t.is_monthly)
+  const normal = col.tasks.filter(t => !t.is_weekly && !t.is_monthly)
+
   return (
     <div className={`${baseClasses} ${colorClasses}`}>
       <div className="flex items-center justify-between mb-2">
@@ -110,13 +130,15 @@ function Column({ col, isOverdue }) {
           </span>
         )}
       </div>
-      <div className="space-y-0.5 min-h-[20px]">
+      <div className="space-y-1.5 min-h-[20px]">
         {col.tasks.length === 0 ? (
           <p className="text-xs text-gray-300 dark:text-gray-600 text-center py-1.5">—</p>
         ) : (
-          col.tasks.map(task => (
-            <TaskItem key={task.id} task={task} showDate={isOverdue} />
-          ))
+          <>
+            <TaskGroup label="Weekly" tasks={weekly} showDate={isOverdue} />
+            <TaskGroup label="Monthly" tasks={monthly} showDate={isOverdue} />
+            <TaskGroup label="Tasks" tasks={normal} showDate={isOverdue} />
+          </>
         )}
       </div>
     </div>
@@ -124,24 +146,63 @@ function Column({ col, isOverdue }) {
 }
 
 export default function WeeklyTimeline() {
-  const { standardTasks, loading } = useTasks()
+  const { standardTasks, monthlyInstances, loading } = useTasks()
+  const { user } = useAuth()
+  const { members } = useTeam()
   const [show, setShow] = useState(true)
   const [hideCompleted, setHideCompleted] = useState(true)
+  const [selectedMemberId, setSelectedMemberId] = useState(null) // null = default to current user
 
   if (loading) return null
 
-  const { overdue, dayColumns, nextWeek, later } = buildWeekColumns(standardTasks, hideCompleted)
+  const currentUserId = user?.id
+  const activeFilter = selectedMemberId ?? currentUserId
+
+  // Combine standard tasks (includes weekly instances) + monthly instances for timeline display
+  const allTasks = [...standardTasks, ...monthlyInstances]
+
+  // Filter by selected team member
+  const filteredTasks = !activeFilter
+    ? allTasks
+    : allTasks.filter(task => {
+        if (activeFilter === currentUserId) {
+          // Current user: show their own tasks (unassigned or explicitly assigned to them)
+          return task.assignees.length === 0 || task.assignees.includes(activeFilter)
+        }
+        return task.assignees.includes(activeFilter)
+      })
+
+  const { overdue, dayColumns, nextWeek, later } = buildWeekColumns(filteredTasks, hideCompleted)
   const hasAnything =
     overdue.tasks.length > 0 ||
     dayColumns.some(c => c.tasks.length > 0) ||
     nextWeek.tasks.length > 0 ||
     later.tasks.length > 0
 
+  const sortedMembers = [...members].sort((a, b) => {
+    if (a.id === currentUserId) return -1
+    if (b.id === currentUserId) return 1
+    return a.display_name.localeCompare(b.display_name)
+  })
+
   return (
     <div className="mb-8">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-3">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white">This Week</h2>
+          {show && sortedMembers.length > 0 && (
+            <select
+              value={activeFilter || ''}
+              onChange={e => setSelectedMemberId(e.target.value || null)}
+              className="text-xs border border-gray-200 dark:border-gray-600 rounded-md px-2 py-0.5 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-1 focus:ring-primary-500"
+            >
+              {sortedMembers.map(m => (
+                <option key={m.id} value={m.id}>
+                  {m.display_name}{m.id === currentUserId ? ' (you)' : ''}
+                </option>
+              ))}
+            </select>
+          )}
           {show && (
             <label className="flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400 cursor-pointer select-none">
               <input
