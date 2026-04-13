@@ -13,7 +13,6 @@ export default function Layout({ children }) {
     { to: '/dashboard', label: 'Dashboard' },
     { to: '/notes', label: 'My Notes' },
     { to: '/tasks', label: 'My Tasks' },
-    { to: '/todo-lists', label: 'To-Do Lists' },
     { to: '/personal-goals', label: 'My Goals' },
     ...(isLeader ? [{ to: '/reports', label: 'Reports' }, { to: '/team', label: 'Team' }] : [])
   ]

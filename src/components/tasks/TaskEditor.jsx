@@ -16,7 +16,9 @@ function dateToNoonUTC(dateStr) {
   return `${dateStr}T12:00:00.000Z`
 }
 
-export default function TaskEditor({ task, isOpen, onClose, onSave, isMonthlyMode = false }) {
+const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+
+export default function TaskEditor({ task, isOpen, onClose, onSave, isMonthlyMode = false, isWeeklyMode = false }) {
   const { goals, members, isLeader } = useTeam()
   const { activeGoals: activePersonalGoals } = usePersonalGoals()
   const [title, setTitle] = useState('')
@@ -29,6 +31,8 @@ export default function TaskEditor({ task, isOpen, onClose, onSave, isMonthlyMod
   const [sharedToDashboard, setSharedToDashboard] = useState(false)
   const [dueDate, setDueDate] = useState('')
   const [isMonthly, setIsMonthly] = useState(false)
+  const [isWeekly, setIsWeekly] = useState(false)
+  const [weeklyDay, setWeeklyDay] = useState(1) // Monday default
   const [saving, setSaving] = useState(false)
 
   const activeGoals = (goals || []).filter(g => g.status === 'active')
@@ -43,8 +47,10 @@ export default function TaskEditor({ task, isOpen, onClose, onSave, isMonthlyMod
       setLinkedPersonalGoalIds(task.linked_personal_goal_ids || [])
       setAssigneeIds(task.assignees || [])
       setSharedToDashboard(task.shared_to_dashboard || false)
-      setDueDate(getDateInCentral(task.due_date))
+      setDueDate(task.is_weekly ? '' : getDateInCentral(task.due_date))
       setIsMonthly(task.is_monthly || false)
+      setIsWeekly(task.is_weekly || false)
+      setWeeklyDay(task.weekly_day ?? 1)
     } else {
       setTitle('')
       setDescription('')
@@ -56,6 +62,8 @@ export default function TaskEditor({ task, isOpen, onClose, onSave, isMonthlyMod
       setSharedToDashboard(false)
       setDueDate('')
       setIsMonthly(isMonthlyMode)
+      setIsWeekly(isWeeklyMode)
+      setWeeklyDay(1)
     }
   }, [task])
 
@@ -89,8 +97,10 @@ export default function TaskEditor({ task, isOpen, onClose, onSave, isMonthlyMod
       linked_personal_goal_ids: linkedPersonalGoalIds,
       assignee_ids: assigneeIds,
       shared_to_dashboard: sharedToDashboard,
-      due_date: dateToNoonUTC(dueDate),
-      is_monthly: isMonthly
+      due_date: isWeekly ? null : dateToNoonUTC(dueDate),
+      is_monthly: isMonthly,
+      is_weekly: isWeekly,
+      weekly_day: isWeekly ? weeklyDay : null
     })
     setSaving(false)
     onClose()
@@ -158,13 +168,14 @@ export default function TaskEditor({ task, isOpen, onClose, onSave, isMonthlyMod
 
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Due Date (optional)
+              Due Date {isWeekly ? '(set by weekly day)' : '(optional)'}
             </label>
             <input
               type="date"
               value={dueDate}
               onChange={(e) => setDueDate(e.target.value)}
               className="input"
+              disabled={isWeekly}
             />
           </div>
         </div>
@@ -270,9 +281,48 @@ export default function TaskEditor({ task, isOpen, onClose, onSave, isMonthlyMod
         <div className="flex items-center gap-2">
           <input
             type="checkbox"
+            id="taskWeekly"
+            checked={isWeekly}
+            onChange={(e) => {
+              setIsWeekly(e.target.checked)
+              if (e.target.checked) {
+                setIsMonthly(false)
+                setDueDate('')
+              }
+            }}
+            className="w-4 h-4 text-primary-600 rounded border-gray-300 focus:ring-primary-500"
+          />
+          <label htmlFor="taskWeekly" className="text-sm text-gray-700 dark:text-gray-300">
+            Weekly task (auto-creates a copy each week)
+          </label>
+        </div>
+
+        {isWeekly && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Day of week
+            </label>
+            <select
+              value={weeklyDay}
+              onChange={(e) => setWeeklyDay(parseInt(e.target.value))}
+              className="input"
+            >
+              {DAY_NAMES.map((name, i) => (
+                <option key={i} value={i}>{name}</option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        <div className="flex items-center gap-2">
+          <input
+            type="checkbox"
             id="taskMonthly"
             checked={isMonthly}
-            onChange={(e) => setIsMonthly(e.target.checked)}
+            onChange={(e) => {
+              setIsMonthly(e.target.checked)
+              if (e.target.checked) setIsWeekly(false)
+            }}
             className="w-4 h-4 text-primary-600 rounded border-gray-300 focus:ring-primary-500"
           />
           <label htmlFor="taskMonthly" className="text-sm text-gray-700 dark:text-gray-300">

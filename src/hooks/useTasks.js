@@ -8,6 +8,26 @@ function getCurrentMonth() {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
 }
 
+// Returns the YYYY-MM-DD of the most recent Sunday (start of current week)
+function getCurrentWeek() {
+  const now = new Date()
+  const dayOfWeek = now.getDay() // 0=Sun
+  const sunday = new Date(now)
+  sunday.setDate(now.getDate() - dayOfWeek)
+  const y = sunday.getFullYear()
+  const m = String(sunday.getMonth() + 1).padStart(2, '0')
+  const d = String(sunday.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
+}
+
+// Given a week's Sunday (YYYY-MM-DD) and a day offset (0=Sun, 1=Mon…6=Sat),
+// return an ISO timestamp at noon UTC so the date stays stable across US timezones.
+function getWeeklyDueDate(sundayStr, weeklyDay) {
+  const date = new Date(sundayStr + 'T12:00:00.000Z')
+  date.setUTCDate(date.getUTCDate() + (weeklyDay || 0))
+  return date.toISOString()
+}
+
 export function useTasks() {
   const { user } = useAuth()
   const { currentTeam } = useTeam()
@@ -16,7 +36,10 @@ export function useTasks() {
 
   useEffect(() => {
     if (user && currentTeam) {
-      fetchTasks().then(() => ensureMonthlyTasks())
+      fetchTasks().then(() => {
+        ensureMonthlyTasks()
+        ensureWeeklyTasks()
+      })
       const unsubscribe = subscribeToTasks()
       return () => unsubscribe?.()
     } else {
@@ -117,7 +140,9 @@ export function useTasks() {
     assignee_ids = [],
     shared_to_dashboard = false,
     due_date = null,
-    is_monthly = false
+    is_monthly = false,
+    is_weekly = false,
+    weekly_day = null
   }) {
     if (!user || !currentTeam) return { error: 'Not authenticated or no team' }
 
@@ -133,7 +158,9 @@ export function useTasks() {
         linked_goal_id,
         shared_to_dashboard,
         due_date,
-        is_monthly
+        is_monthly,
+        is_weekly,
+        weekly_day: is_weekly ? weekly_day : null
       })
       .select(`
         *,
@@ -348,8 +375,106 @@ export function useTasks() {
     }
   }
 
+  // Weekly task: create an instance for the current week
+  async function createWeeklyInstance(sourceTask) {
+    if (!user || !currentTeam) return { error: 'Not authenticated or no team' }
+
+    const currentWeek = getCurrentWeek()
+    const dueDate = sourceTask.weekly_day != null
+      ? getWeeklyDueDate(currentWeek, sourceTask.weekly_day)
+      : null
+
+    const { data, error } = await supabase
+      .from('tasks')
+      .insert({
+        user_id: sourceTask.user_id,
+        team_id: currentTeam.id,
+        title: sourceTask.title,
+        description: sourceTask.description || '',
+        notes: sourceTask.notes || '',
+        status: 'todo',
+        linked_goal_id: sourceTask.linked_goal_id || null,
+        shared_to_dashboard: sourceTask.shared_to_dashboard || false,
+        due_date: dueDate,
+        is_weekly: true,
+        weekly_source_id: sourceTask.id,
+        weekly_week: currentWeek,
+        weekly_day: sourceTask.weekly_day
+      })
+      .select()
+      .single()
+
+    if (!error && data) {
+      const sourceAssignees = sourceTask.assignees || []
+      if (sourceAssignees.length > 0) {
+        await supabase
+          .from('task_assignees')
+          .insert(sourceAssignees.map(uid => ({
+            task_id: data.id,
+            user_id: uid
+          })))
+      }
+    }
+
+    return { data, error }
+  }
+
+  // Ensure weekly tasks have instances for the current week
+  async function ensureWeeklyTasks() {
+    if (!user || !currentTeam) return
+
+    const currentWeek = getCurrentWeek()
+
+    try {
+      const { data: templates } = await supabase
+        .from('tasks')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('team_id', currentTeam.id)
+        .eq('is_weekly', true)
+        .is('weekly_source_id', null)
+
+      if (!templates || templates.length === 0) return
+
+      const templateIds = templates.map(t => t.id)
+      const { data: existingInstances } = await supabase
+        .from('tasks')
+        .select('weekly_source_id')
+        .in('weekly_source_id', templateIds)
+        .eq('weekly_week', currentWeek)
+
+      const existingSourceIds = new Set((existingInstances || []).map(i => i.weekly_source_id))
+
+      const templatesToCreate = templates.filter(t => !existingSourceIds.has(t.id))
+      if (templatesToCreate.length === 0) return
+
+      const tIds = templatesToCreate.map(t => t.id)
+      let assigneesMap = {}
+      if (tIds.length > 0) {
+        const { data: assigneesData } = await supabase
+          .from('task_assignees')
+          .select('task_id, user_id')
+          .in('task_id', tIds)
+        ;(assigneesData || []).forEach(a => {
+          if (!assigneesMap[a.task_id]) assigneesMap[a.task_id] = []
+          assigneesMap[a.task_id].push(a.user_id)
+        })
+      }
+
+      for (const template of templatesToCreate) {
+        await createWeeklyInstance({ ...template, assignees: assigneesMap[template.id] || [] })
+      }
+
+      await fetchTasks()
+    } catch (err) {
+      console.error('Error ensuring weekly tasks:', err)
+    }
+  }
+
   // Filter helpers
-  const standardTasks = tasks.filter(t => !t.is_monthly)
+  // Standard: excludes monthly tasks AND weekly templates (weekly instances are real tasks, keep them)
+  const standardTasks = tasks.filter(t => !t.is_monthly && !(t.is_weekly && !t.weekly_source_id))
+  const weeklyTemplates = tasks.filter(t => t.is_weekly && !t.weekly_source_id)
   const monthlyTemplates = tasks.filter(t => t.is_monthly && !t.monthly_source_id)
   const monthlyInstances = tasks.filter(t => t.is_monthly && t.monthly_source_id)
 
@@ -361,6 +486,7 @@ export function useTasks() {
   return {
     tasks,
     standardTasks,
+    weeklyTemplates,
     monthlyTemplates,
     monthlyInstances,
     todoTasks,
@@ -374,6 +500,8 @@ export function useTasks() {
     reorderTasks,
     createMonthlyInstance,
     ensureMonthlyTasks,
+    createWeeklyInstance,
+    ensureWeeklyTasks,
     refreshTasks: fetchTasks
   }
 }
