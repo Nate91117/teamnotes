@@ -2,6 +2,7 @@ import { useTeam } from '../contexts/TeamContext'
 import Layout from '../components/common/Layout'
 import LeaderDashboard from '../components/dashboard/LeaderDashboard'
 import MemberDashboard from '../components/dashboard/MemberDashboard'
+import WeeklyTimeline from '../components/dashboard/WeeklyTimeline'
 import Button from '../components/common/Button'
 import LoadingSpinner from '../components/common/LoadingSpinner'
 import { useState } from 'react'
@@ -108,6 +109,7 @@ export default function Dashboard() {
 
   return (
     <Layout>
+      <WeeklyTimeline />
       {isLeader ? <LeaderDashboard /> : <MemberDashboard />}
     </Layout>
   )
