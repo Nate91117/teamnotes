@@ -11,6 +11,7 @@ import TeamSettings from './pages/TeamSettings'
 import PersonalGoals from './pages/PersonalGoals'
 import Settings from './pages/Settings'
 import Reports from './pages/Reports'
+import TodoListsPage from './pages/TodoListsPage'
 
 function App() {
   return (
@@ -52,6 +53,11 @@ function App() {
           <Route path="/settings" element={
             <ProtectedRoute>
               <Settings />
+            </ProtectedRoute>
+          } />
+          <Route path="/todo-lists" element={
+            <ProtectedRoute>
+              <TodoListsPage />
             </ProtectedRoute>
           } />
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
