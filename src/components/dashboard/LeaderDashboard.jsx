@@ -30,7 +30,7 @@ function dateToNoonUTC(dateStr) {
   return `${dateStr}T12:00:00.000Z`
 }
 
-export default function LeaderDashboard() {
+export default function LeaderDashboard({ onTaskUpdate }) {
   const { currentTeam, goals, createGoal, updateGoal, deleteGoal, updateGoalMembers, members, categories, createCategory, updateCategory, deleteCategory } = useTeam()
   const [showModal, setShowModal] = useState(false)
   const [showCategoryModal, setShowCategoryModal] = useState(false)
@@ -322,6 +322,7 @@ export default function LeaderDashboard() {
     setLinkedEditSaving(false)
     setEditingLinkedTask(null)
     fetchLinkedItems()
+    onTaskUpdate?.()
   }
 
   function toggleLinkedTaskAssignee(memberId) {

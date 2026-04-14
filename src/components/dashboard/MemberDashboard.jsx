@@ -1,16 +1,15 @@
 import { Link } from 'react-router-dom'
 import { useTeam } from '../../contexts/TeamContext'
 import { useNotes } from '../../hooks/useNotes'
-import { useTasks } from '../../hooks/useTasks'
 import { usePersonalGoals } from '../../hooks/usePersonalGoals'
 import GoalCard from './GoalCard'
+import Button from '../common/Button'
 import LoadingSpinner from '../common/LoadingSpinner'
 
-export default function MemberDashboard() {
+export default function MemberDashboard({ todoTasks, inProgressTasks, tasksLoading }) {
   const { goals, loading: goalsLoading } = useTeam()
   const { notes, loading: notesLoading } = useNotes()
-  const { tasks, todoTasks, inProgressTasks, loading: tasksLoading } = useTasks()
-  const { activeGoals: activePersonalGoals, loading: personalGoalsLoading } = usePersonalGoals()
+  const { activeGoals: activePersonalGoals, loading: personalGoalsLoading, updatePersonalGoal } = usePersonalGoals()
 
   const loading = goalsLoading || notesLoading || tasksLoading || personalGoalsLoading
 
@@ -144,7 +143,16 @@ export default function MemberDashboard() {
               const progressPercent = totalTasks > 0 ? Math.round((doneTasks / totalTasks) * 100) : 0
               return (
                 <div key={goal.id} className="card py-4">
-                  <h4 className="font-medium text-gray-900 dark:text-white mb-2">{goal.title}</h4>
+                  <div className="flex items-start justify-between mb-2">
+                    <h4 className="font-medium text-gray-900 dark:text-white">{goal.title}</h4>
+                    <Button
+                      variant="ghost"
+                      size="small"
+                      onClick={() => updatePersonalGoal(goal.id, { status: 'completed' })}
+                    >
+                      Complete
+                    </Button>
+                  </div>
                   {totalTasks > 0 && (
                     <div>
                       <div className="flex items-center justify-between mb-1">

@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { useTasks } from '../../hooks/useTasks'
 import { useAuth } from '../../contexts/AuthContext'
 import { useTeam } from '../../hooks/useTeam'
 
@@ -145,8 +144,7 @@ function Column({ col, isOverdue }) {
   )
 }
 
-export default function WeeklyTimeline() {
-  const { standardTasks, monthlyInstances, loading } = useTasks()
+export default function WeeklyTimeline({ standardTasks, monthlyInstances, loading }) {
   const { user } = useAuth()
   const { members } = useTeam()
   const [show, setShow] = useState(true)

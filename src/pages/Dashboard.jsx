@@ -1,4 +1,5 @@
 import { useTeam } from '../contexts/TeamContext'
+import { useTasks } from '../hooks/useTasks'
 import Layout from '../components/common/Layout'
 import LeaderDashboard from '../components/dashboard/LeaderDashboard'
 import MemberDashboard from '../components/dashboard/MemberDashboard'
@@ -10,6 +11,7 @@ import Modal from '../components/common/Modal'
 
 export default function Dashboard() {
   const { currentTeam, isLeader, loading, createTeam, teams } = useTeam()
+  const { standardTasks, monthlyInstances, todoTasks, inProgressTasks, loading: tasksLoading, refreshTasks } = useTasks()
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [teamName, setTeamName] = useState('')
   const [creating, setCreating] = useState(false)
@@ -109,8 +111,10 @@ export default function Dashboard() {
 
   return (
     <Layout>
-      <WeeklyTimeline />
-      {isLeader ? <LeaderDashboard /> : <MemberDashboard />}
+      <WeeklyTimeline standardTasks={standardTasks} monthlyInstances={monthlyInstances} loading={tasksLoading} />
+      {isLeader
+        ? <LeaderDashboard onTaskUpdate={refreshTasks} />
+        : <MemberDashboard todoTasks={todoTasks} inProgressTasks={inProgressTasks} tasksLoading={tasksLoading} />}
     </Layout>
   )
 }
