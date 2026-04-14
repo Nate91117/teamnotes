@@ -66,85 +66,94 @@ export default function GoalCard({
   const isOverdue = goal.due_date && isDateOverdue(goal.due_date) && goal.status !== 'completed'
 
   return (
-    <div className="card">
-      <div className="flex items-start justify-between">
-        <div className="flex-1">
-          <div className="flex items-center gap-2 mb-2 flex-wrap">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{goal.title}</h3>
-            {formattedDueDate && (
-              <span className={`badge ${isOverdue ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' : 'badge-blue'}`}>
-                {isOverdue ? 'Overdue: ' : 'Due: '}{formattedDueDate}
-              </span>
-            )}
-          </div>
-
-          {goal.description && (
-            <p className="text-gray-600 dark:text-gray-400 text-sm mb-3">{goal.description}</p>
-          )}
-
-          {/* Assigned Members */}
-          {assignedMemberNames.length > 0 && (
-            <div className="flex items-center gap-2 mb-3">
-              <span className="text-xs text-gray-500 dark:text-gray-400">Assigned to:</span>
-              <div className="flex flex-wrap gap-1">
-                {assignedMemberNames.map((name, i) => (
-                  <span key={i} className="px-2 py-0.5 bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300 rounded-full text-xs">
-                    {name}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Task Progress Bar */}
-          {totalTasks > 0 && (
-            <div className="mb-2">
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-xs text-gray-500 dark:text-gray-400">
-                  {doneTasks}/{totalTasks} tasks done
-                </span>
-                <span className="text-xs text-gray-500 dark:text-gray-400">{progressPercent}%</span>
-              </div>
-              <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2">
-                <div
-                  className={`h-2 rounded-full transition-all ${progressPercent === 100 ? 'bg-green-500' : 'bg-primary-500'}`}
-                  style={{ width: `${progressPercent}%` }}
-                />
-              </div>
-            </div>
+    <div className="card group hover:shadow-md transition-shadow">
+      <div className="flex items-start justify-between mb-2">
+        <div className="flex items-center gap-2 flex-wrap flex-1">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{goal.title}</h3>
+          {formattedDueDate && (
+            <span className={`badge ${isOverdue ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' : 'badge-blue'}`}>
+              {isOverdue ? 'Overdue: ' : 'Due: '}{formattedDueDate}
+            </span>
           )}
         </div>
 
-        <div className="flex items-center gap-1">
+        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
           {onComplete && goal.status !== 'completed' && (
             <Button
               variant="ghost"
               size="small"
               onClick={() => onComplete(goal.id)}
+              title="Mark complete"
             >
-              Complete
+              <svg className="w-4 h-4 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
             </Button>
           )}
           {isLeader && (
-            <div className="flex gap-2">
+            <>
               <Button
                 variant="ghost"
                 size="small"
                 onClick={() => onEdit(goal)}
+                title="Edit goal"
               >
-                Edit
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
               </Button>
               <Button
                 variant="ghost"
                 size="small"
                 onClick={() => onDelete(goal.id)}
-                className="text-red-600 hover:bg-red-50"
+                className="text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/30"
+                title="Delete goal"
               >
-                Delete
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
               </Button>
-            </div>
+            </>
           )}
         </div>
+      </div>
+
+      <div>
+        {goal.description && (
+          <p className="text-gray-600 dark:text-gray-400 text-sm mb-3">{goal.description}</p>
+        )}
+
+        {/* Assigned Members */}
+        {assignedMemberNames.length > 0 && (
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-xs text-gray-500 dark:text-gray-400">Assigned to:</span>
+            <div className="flex flex-wrap gap-1">
+              {assignedMemberNames.map((name, i) => (
+                <span key={i} className="px-2 py-0.5 bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300 rounded-full text-xs">
+                  {name}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Task Progress Bar */}
+        {totalTasks > 0 && (
+          <div className="mb-2">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-xs text-gray-500 dark:text-gray-400">
+                {doneTasks}/{totalTasks} tasks done
+              </span>
+              <span className="text-xs text-gray-500 dark:text-gray-400">{progressPercent}%</span>
+            </div>
+            <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2">
+              <div
+                className={`h-2 rounded-full transition-all ${progressPercent === 100 ? 'bg-green-500' : 'bg-primary-500'}`}
+                style={{ width: `${progressPercent}%` }}
+              />
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Notes Section */}
