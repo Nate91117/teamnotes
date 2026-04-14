@@ -458,6 +458,7 @@ export default function LeaderDashboard({ onTaskUpdate }) {
                       goal={goal}
                       onEdit={openEditModal}
                       onDelete={handleDelete}
+                      onComplete={(id) => updateGoal(id, { status: 'completed' })}
                       isLeader={true}
                       linkedItems={linkedItems[goal.id] || []}
                       members={members}
@@ -482,6 +483,7 @@ export default function LeaderDashboard({ onTaskUpdate }) {
                 goal={goal}
                 onEdit={openEditModal}
                 onDelete={handleDelete}
+                onComplete={(id) => updateGoal(id, { status: 'completed' })}
                 isLeader={true}
                 linkedItems={linkedItems[goal.id] || []}
                 members={members}
