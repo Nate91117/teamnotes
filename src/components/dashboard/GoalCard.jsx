@@ -31,6 +31,7 @@ export default function GoalCard({
   goal,
   onEdit,
   onDelete,
+  onComplete,
   isLeader,
   linkedItems = [],
   members = [],
@@ -115,6 +116,15 @@ export default function GoalCard({
         </div>
 
         <div className="flex items-center gap-1">
+          {onComplete && goal.status !== 'completed' && (
+            <Button
+              variant="ghost"
+              size="small"
+              onClick={() => onComplete(goal.id)}
+            >
+              Complete
+            </Button>
+          )}
           {isLeader && (
             <div className="flex gap-2">
               <Button

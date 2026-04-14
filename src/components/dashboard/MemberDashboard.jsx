@@ -7,7 +7,7 @@ import Button from '../common/Button'
 import LoadingSpinner from '../common/LoadingSpinner'
 
 export default function MemberDashboard({ todoTasks, inProgressTasks, tasksLoading }) {
-  const { goals, loading: goalsLoading } = useTeam()
+  const { goals, updateGoal, loading: goalsLoading } = useTeam()
   const { notes, loading: notesLoading } = useNotes()
   const { activeGoals: activePersonalGoals, loading: personalGoalsLoading, updatePersonalGoal } = usePersonalGoals()
 
@@ -190,6 +190,7 @@ export default function MemberDashboard({ todoTasks, inProgressTasks, tasksLoadi
                 key={goal.id}
                 goal={goal}
                 isLeader={false}
+                onComplete={(id) => updateGoal(id, { status: 'completed' })}
               />
             ))}
           </div>
