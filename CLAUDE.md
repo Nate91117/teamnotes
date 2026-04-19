@@ -146,3 +146,8 @@ await supabase.from('junction').insert(newIds.map(...))
 - Push to `master` triggers `.github/workflows/deploy.yml`
 - Builds with Node 20, injects Supabase vars from GitHub Secrets
 - Deploys to GitHub Pages at `/teamnotes/` base path
+
+## Tasks
+<!-- daily-helper:sync-start -->
+- [x] <task id=f9a8c63c-afb8-4112-88ce-17be8e67f323> Core collaboration features (goals, tasks, notes)
+<!-- daily-helper:sync-end -->
