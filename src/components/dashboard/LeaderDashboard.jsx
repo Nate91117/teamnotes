@@ -138,7 +138,7 @@ export default function LeaderDashboard({ onTaskUpdate }) {
       const [tasksResult, notesResult] = await Promise.all([
         supabase
           .from('tasks')
-          .select('id, title, status, due_date, completed_at, user_id, is_monthly, monthly_source_id, monthly_month')
+          .select('id, title, status, due_date, completed_at, user_id, is_monthly, monthly_source_id, monthly_month, is_weekly, weekly_source_id, weekly_week')
           .eq('team_id', currentTeam.id)
           .eq('shared_to_dashboard', true),
         supabase

@@ -437,6 +437,15 @@ export function useTasks() {
       if (!templates || templates.length === 0) return
 
       const templateIds = templates.map(t => t.id)
+
+      // Delete stale incomplete weekly instances from prior weeks
+      await supabase
+        .from('tasks')
+        .delete()
+        .in('weekly_source_id', templateIds)
+        .neq('weekly_week', currentWeek)
+        .neq('status', 'done')
+
       const { data: existingInstances } = await supabase
         .from('tasks')
         .select('weekly_source_id')
