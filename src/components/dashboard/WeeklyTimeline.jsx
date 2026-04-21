@@ -47,7 +47,15 @@ function buildWeekColumns(tasks, hideCompleted) {
       : new Date(task.due_date).toLocaleDateString('en-CA', { timeZone: 'America/Chicago' })
 
     if (taskDateStr < today) {
-      overdue.tasks.push(task)
+      const isWeekly = task.is_weekly || task.weekly_source_id
+      if (isWeekly) {
+        // Weekly tasks always live on their weekday — never overdue
+        const taskDow = new Date(taskDateStr + 'T12:00:00').getDay() // 0=Sun…6=Sat
+        const colIndex = taskDow === 0 ? 6 : taskDow - 1            // 0=Mon…6=Sun
+        dayColumns[colIndex].tasks.push(task)
+      } else {
+        overdue.tasks.push(task)
+      }
     } else if (taskDateStr <= sundayStr) {
       const col = dayColumns.find(c => c.dateStr === taskDateStr)
       if (col) col.tasks.push(task)
