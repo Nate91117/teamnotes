@@ -71,22 +71,21 @@ function buildWeekColumns(tasks, hideCompleted) {
 
 function TaskItem({ task, showDate }) {
   const isDone = task.status === 'done'
+  const dateLabel = showDate && task.due_date
+    ? (/^\d{4}-\d{2}-\d{2}$/.test(task.due_date)
+        ? new Date(task.due_date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+        : new Date(task.due_date).toLocaleDateString('en-US', { timeZone: 'America/Chicago', month: 'short', day: 'numeric' }))
+    : null
   return (
     <div className={`py-1 px-1.5 rounded ${isDone ? 'opacity-50' : ''}`}>
-      <span className={`block text-xs leading-tight ${
+      <span className={`text-xs leading-tight ${
         isDone ? 'line-through text-gray-400 dark:text-gray-500' : 'text-gray-800 dark:text-gray-200'
       }`}>
         {task.title}
+        {dateLabel && (
+          <span className="ml-1.5 text-[10px] text-gray-400 dark:text-gray-500 font-normal">{dateLabel}</span>
+        )}
       </span>
-      {showDate && task.due_date && (
-        <span className="text-xs text-red-500 dark:text-red-400">
-          {new Date(task.due_date).toLocaleDateString('en-US', {
-            timeZone: 'America/Chicago',
-            month: 'short',
-            day: 'numeric'
-          })}
-        </span>
-      )}
     </div>
   )
 }
