@@ -40,9 +40,13 @@ function buildWeekColumns(tasks, hideCompleted) {
 
   for (const task of visible) {
     if (!task.due_date) continue
-    const taskDateStr = new Date(task.due_date).toLocaleDateString('en-CA', { timeZone: 'America/Chicago' })
+    // Plain YYYY-MM-DD strings would parse as UTC midnight (off-by-one in CST); use them directly.
+    // Full ISO timestamps (noon UTC, from dateToNoonUTC) parse correctly via toLocaleDateString.
+    const taskDateStr = /^\d{4}-\d{2}-\d{2}$/.test(task.due_date)
+      ? task.due_date
+      : new Date(task.due_date).toLocaleDateString('en-CA', { timeZone: 'America/Chicago' })
 
-    if (taskDateStr < mondayStr) {
+    if (taskDateStr < today) {
       overdue.tasks.push(task)
     } else if (taskDateStr <= sundayStr) {
       const col = dayColumns.find(c => c.dateStr === taskDateStr)
