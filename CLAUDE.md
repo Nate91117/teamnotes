@@ -1,5 +1,7 @@
 # TeamNotes - Claude Code Project Context
 
+> The `## Tasks` block below syncs bidirectionally with the daily-helper projects tab. Local Claude Code auto-pulls on session start (global `~/.claude/settings.json` hook); from anywhere else, `git pull --ff-only` before editing.
+
 ## Documentation Maintenance Rule
 **IMPORTANT:** When committing changes that add features, modify architecture, change the database schema, or alter the project structure, you MUST also update this file (CLAUDE.md) and README.md to reflect those changes before committing. Keep both files accurate and current.
 
