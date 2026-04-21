@@ -70,77 +70,9 @@ npm install   # Install dependencies
 npm run dev   # Start dev server at http://localhost:3000
 ```
 
-## Project Structure
+## Architecture
 
-```
-teamnotes/
-├── src/
-│   ├── components/
-│   │   ├── auth/          # LoginForm, SignupForm, ProtectedRoute
-│   │   ├── common/        # Button, Modal, LoadingSpinner, Layout
-│   │   ├── dashboard/     # LeaderDashboard, MemberDashboard, MemberViewDashboard, GoalCard
-│   │   ├── notes/         # NotesList, NoteEditor, NoteCard
-│   │   ├── tasks/         # TasksList, TaskEditor, TaskCard
-│   │   ├── goals/         # PersonalGoalsList, PersonalGoalCard, PersonalGoalEditor
-│   │   ├── team/          # TeamSettings, MemberList, InviteMember
-│   │   └── settings/      # AccountSettings, SecuritySettings, PreferenceSettings
-│   ├── contexts/
-│   │   ├── AuthContext.jsx    # Authentication state & methods
-│   │   └── TeamContext.jsx    # Team, goals, members, categories state
-│   ├── hooks/
-│   │   ├── useNotes.js        # Notes CRUD operations
-│   │   ├── useTasks.js        # Tasks CRUD with multi-assignee & goal links
-│   │   ├── usePersonalGoals.js # Personal goals with year filtering
-│   │   └── useTeam.js         # Team context wrapper
-│   ├── lib/
-│   │   └── supabase.js    # Supabase client
-│   ├── pages/
-│   │   ├── Login.jsx, Signup.jsx
-│   │   ├── Dashboard.jsx      # Routes to Leader or Member dashboard
-│   │   ├── MyTasks.jsx        # Tasks page with error boundary
-│   │   ├── MyNotes.jsx        # Notes page
-│   │   ├── PersonalGoals.jsx  # Personal goals page
-│   │   ├── TeamSettings.jsx   # Team management (leader only)
-│   │   └── Settings.jsx       # Account settings
-│   ├── App.jsx
-│   ├── main.jsx
-│   └── index.css          # Tailwind imports + custom component styles
-├── .github/workflows/
-│   └── deploy.yml         # GitHub Actions deployment pipeline
-├── supabase-schema.sql                    # Base database schema
-├── supabase-categories-migration.sql      # Categories migration
-├── supabase-personal-goals-migration.sql  # Personal goals migration
-├── supabase-task-enhancements-migration.sql # Task enhancements migration
-├── supabase-fix-rls.sql                   # RLS policy fixes
-├── CLAUDE.md              # AI assistant project context
-├── .env.example           # Environment template
-├── package.json
-├── vite.config.js
-├── tailwind.config.js
-└── postcss.config.js
-```
-
-## User Flows
-
-### Sign Up / Join Flow
-1. User enters email + password on signup page
-2. Profile created in database
-3. If pending invitation exists for that email: auto-joins team as member
-4. If no invitation: can create a new team (becomes leader)
-
-### Task Workflow
-1. Member creates task with title, description, due date
-2. Optionally links to team goal and/or personal goals
-3. Leader can assign tasks to multiple team members
-4. Status progression: To Do → In Progress → Done
-5. Toggle "Share to Dashboard" to make visible on leader's view
-
-### Goal Linking
-1. Leader creates team goals, optionally assigns categories and members
-2. Members create personal goals for the year
-3. Members link personal goals to team goals
-4. Members link tasks to both team goals and personal goals
-5. Leader sees linked/shared items on the dashboard
+See `CLAUDE.md` for the full architecture reference (directory layout, state management, database schema, code patterns, routes, and known technical debt).
 
 ## Development
 
