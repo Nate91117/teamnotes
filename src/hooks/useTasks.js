@@ -28,6 +28,17 @@ function getWeeklyDueDate(sundayStr, weeklyDay) {
   return date.toISOString()
 }
 
+// Given a month 'YYYY-MM' and the template's due_date, return that same
+// day-of-month in the target month (clamped to the month's last day), noon UTC.
+function getMonthlyDueDate(monthStr, templateDueDate) {
+  if (!templateDueDate) return null
+  const day = new Date(templateDueDate).getUTCDate()
+  const [y, m] = monthStr.split('-').map(Number)
+  const lastDay = new Date(Date.UTC(y, m, 0)).getUTCDate()
+  const d = Math.min(day, lastDay)
+  return new Date(Date.UTC(y, m - 1, d, 12, 0, 0)).toISOString()
+}
+
 export function useTasks() {
   const { user } = useAuth()
   const { currentTeam } = useTeam()
@@ -295,7 +306,7 @@ export function useTasks() {
         status: 'todo',
         linked_goal_id: sourceTask.linked_goal_id || null,
         shared_to_dashboard: sourceTask.shared_to_dashboard || false,
-        due_date: sourceTask.due_date || null,
+        due_date: getMonthlyDueDate(currentMonth, sourceTask.due_date),
         is_monthly: true,
         monthly_source_id: sourceTask.id,
         monthly_month: currentMonth
@@ -337,8 +348,17 @@ export function useTasks() {
 
       if (!templates || templates.length === 0) return
 
-      // Check which templates already have instances for this month
       const templateIds = templates.map(t => t.id)
+
+      // Delete stale incomplete monthly instances from prior months
+      await supabase
+        .from('tasks')
+        .delete()
+        .in('monthly_source_id', templateIds)
+        .neq('monthly_month', currentMonth)
+        .neq('status', 'done')
+
+      // Check which templates already have instances for this month
       const { data: existingInstances } = await supabase
         .from('tasks')
         .select('monthly_source_id')

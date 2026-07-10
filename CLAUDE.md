@@ -1,5 +1,10 @@
 # TeamNotes - Claude Code Project Context
 
+1. Don't assume. Don't hide confusion. Surface tradeoffs.
+2. Minimum code that solves the problem. Nothing speculative.
+3. Touch only what you must. Clean up only your own mess.
+4. Define success criteria. Loop until verified.
+
 > The `## Tasks` block below syncs bidirectionally with the daily-helper projects tab. Local Claude Code auto-pulls on session start (global `~/.claude/settings.json` hook); from anywhere else, `git pull --ff-only` before editing.
 
 ## Documentation Maintenance Rule
@@ -94,6 +99,8 @@ src/
 - Tasks with `is_monthly=true` and `monthly_source_id=null` are **templates**
 - Templates auto-create monthly **instances** (`monthly_source_id` points to template, `monthly_month` = 'YYYY-MM')
 - `ensureMonthlyTasks()` runs on load to create current month's instances
+- Each instance's `due_date` is the template's **day-of-month in the current month** (clamped to the month's last day), not the template's literal date — see `getMonthlyDueDate()`
+- `ensureMonthlyTasks()` also deletes stale **incomplete** instances from prior months on load (parity with weekly); `done` instances are kept for history
 - Monthly instances appear on the "By Member" dashboard only within 7 days of month-end
 - Dashboard has All/Standard/Monthly filter toggle
 
