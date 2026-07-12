@@ -38,9 +38,11 @@ export function TeamProvider({ children }) {
       fetchGoals()
       fetchMembers()
       fetchCategories()
-      const unsubscribe = subscribeToGoals()
+      const unsubscribeGoals = subscribeToGoals()
+      const unsubscribeCategories = subscribeToCategories()
       return () => {
-        if (unsubscribe) unsubscribe()
+        if (unsubscribeGoals) unsubscribeGoals()
+        if (unsubscribeCategories) unsubscribeCategories()
       }
     }
   }, [currentTeam])
@@ -197,6 +199,22 @@ export function TeamProvider({ children }) {
         table: 'goals',
         filter: `team_id=eq.${currentTeam.id}`
       }, fetchGoals)
+      .subscribe()
+
+    return () => subscription.unsubscribe()
+  }
+
+  function subscribeToCategories() {
+    if (!currentTeam) return
+
+    const subscription = supabase
+      .channel(`categories-${currentTeam.id}`)
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'categories',
+        filter: `team_id=eq.${currentTeam.id}`
+      }, fetchCategories)
       .subscribe()
 
     return () => subscription.unsubscribe()

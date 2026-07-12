@@ -367,8 +367,11 @@ export default function LeaderDashboard({ onTaskUpdate }) {
       .filter(g => g.category_id === cat.id)
       .sort(sortByDueDate)
   })
+  // Goals with no category — or a category_id not in the loaded list — fall back
+  // to Uncategorized so a goal can never silently disappear.
+  const categoryIds = new Set(categories.map(c => c.id))
   const uncategorizedGoals = activeGoals
-    .filter(g => !g.category_id)
+    .filter(g => !g.category_id || !categoryIds.has(g.category_id))
     .sort(sortByDueDate)
 
   if (loading) {
