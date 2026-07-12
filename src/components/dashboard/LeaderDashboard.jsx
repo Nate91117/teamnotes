@@ -442,12 +442,13 @@ export default function LeaderDashboard({ onTaskUpdate }) {
           No categories yet. Click "Manage Categories" to create some!
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="overflow-x-auto pb-2 mb-8">
+          <div className="flex gap-6" style={{ minWidth: 'max-content' }}>
           {categories.map(cat => {
             const colors = categoryColors[cat.color] || categoryColors.gray
             const categoryGoals = goalsByCategory[cat.id] || []
             return (
-              <div key={cat.id} className={`${colors.bg} rounded-xl p-4`}>
+              <div key={cat.id} className={`${colors.bg} rounded-xl p-4 w-96 flex-shrink-0`}>
                 <div className="flex items-center gap-2 mb-4">
                   <h3 className={`font-semibold ${colors.header}`}>{cat.name}</h3>
                   <span className={`${colors.badge} px-2 py-0.5 rounded-full text-xs font-medium`}>
@@ -472,6 +473,7 @@ export default function LeaderDashboard({ onTaskUpdate }) {
               </div>
             )
           })}
+          </div>
         </div>
       )}
 
