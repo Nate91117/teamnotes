@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef, useLayoutEffect } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
 import { useTeam } from '../../hooks/useTeam'
 
@@ -77,7 +77,7 @@ function TaskItem({ task, showDate }) {
         : new Date(task.due_date).toLocaleDateString('en-US', { timeZone: 'America/Chicago', month: 'short', day: 'numeric' }))
     : null
   return (
-    <div className={`py-1 px-1.5 rounded ${isDone ? 'opacity-50' : ''}`}>
+    <div data-task-item className={`py-1 px-1.5 rounded ${isDone ? 'opacity-50' : ''}`}>
       <span className={`text-xs leading-tight ${
         isDone ? 'line-through text-gray-400 dark:text-gray-500' : 'text-gray-800 dark:text-gray-200'
       }`}>
@@ -104,8 +104,8 @@ function TaskGroup({ label, tasks, showDate }) {
   )
 }
 
-function Column({ col, isOverdue }) {
-  const baseClasses = 'min-w-[150px] max-w-[200px] rounded-xl border p-3 flex flex-col'
+function Column({ col, isOverdue, isLater, listMaxHeight, hiddenCount }) {
+  const baseClasses = 'min-w-[150px] max-w-[200px] rounded-xl border p-3 flex flex-col relative'
   const colorClasses = col.isToday
     ? 'bg-primary-50 border-primary-300 dark:bg-primary-900/20 dark:border-primary-600'
     : isOverdue
@@ -140,9 +140,16 @@ function Column({ col, isOverdue }) {
           </span>
         )}
       </div>
-      <div className="space-y-1.5 min-h-[20px]">
+      <div
+        data-col-list
+        {...(isLater ? { 'data-later': '' } : {})}
+        className="space-y-1.5 min-h-[20px]"
+        style={isLater && listMaxHeight ? { maxHeight: listMaxHeight, overflow: 'hidden' } : undefined}
+      >
         {col.tasks.length === 0 ? (
           <p className="text-xs text-gray-300 dark:text-gray-600 text-center py-1.5">—</p>
+        ) : isLater ? (
+          col.tasks.map(task => <TaskItem key={task.id} task={task} showDate={false} />)
         ) : (
           <>
             <TaskGroup label="Weekly" tasks={weekly} showDate={isOverdue} />
@@ -151,6 +158,11 @@ function Column({ col, isOverdue }) {
           </>
         )}
       </div>
+      {isLater && hiddenCount > 0 && (
+        <div className="absolute bottom-0 left-0 right-0 rounded-b-xl px-3 pb-2 pt-4 bg-gradient-to-t from-white via-white to-transparent dark:from-gray-800 dark:via-gray-800 text-[10px] font-medium text-gray-400 dark:text-gray-500 pointer-events-none">
+          + {hiddenCount} more
+        </div>
+      )}
     </div>
   )
 }
@@ -162,10 +174,45 @@ export default function WeeklyTimeline({ standardTasks, monthlyInstances, loadin
   const [hideCompleted, setHideCompleted] = useState(true)
   const [selectedMemberId, setSelectedMemberId] = useState(null) // null = default to current user
 
-  if (loading) return null
+  const rowRef = useRef(null)
+  const [innerMax, setInnerMax] = useState(null)   // tallest non-Later column's content height
+  const [laterHidden, setLaterHidden] = useState(0) // Later tasks clipped by the cap
 
   const currentUserId = user?.id
   const activeFilter = selectedMemberId ?? currentUserId
+
+  // Re-measure when the visible task set, filter, or visibility changes.
+  const measureSig = `${standardTasks?.length ?? 0}|${monthlyInstances?.length ?? 0}|${hideCompleted}|${activeFilter}|${show}|${loading}`
+
+  useLayoutEffect(() => {
+    const row = rowRef.current
+    if (!row) return
+    const measure = () => {
+      const lists = Array.from(row.querySelectorAll('[data-col-list]'))
+      const others = lists.filter(el => !el.hasAttribute('data-later'))
+      if (!others.length) { setInnerMax(null); setLaterHidden(0); return }
+      const max = Math.max(...others.map(el => el.scrollHeight))
+      setInnerMax(max)
+
+      const laterList = row.querySelector('[data-later]')
+      if (!laterList) { setLaterHidden(0); return }
+      const barSpace = 22 // room the "+N more" footer overlaps
+      const listTop = laterList.getBoundingClientRect().top
+      let hidden = 0
+      for (const item of laterList.querySelectorAll('[data-task-item]')) {
+        const relBottom = item.getBoundingClientRect().bottom - listTop
+        if (relBottom > max - barSpace) hidden++
+      }
+      setLaterHidden(hidden)
+    }
+    measure()
+    const ro = new ResizeObserver(measure)
+    ro.observe(row)
+    row.querySelectorAll('[data-col-list]').forEach(el => ro.observe(el))
+    return () => ro.disconnect()
+  }, [measureSig])
+
+  if (loading) return null
 
   // Combine standard tasks (includes weekly instances) + monthly instances for timeline display
   const allTasks = [...standardTasks, ...monthlyInstances]
@@ -239,7 +286,7 @@ export default function WeeklyTimeline({ standardTasks, monthlyInstances, loadin
           </div>
         ) : (
           <div className="overflow-x-auto pb-1 -mx-1 px-1">
-            <div className="flex gap-2.5" style={{ minWidth: 'max-content' }}>
+            <div ref={rowRef} className="flex gap-2.5" style={{ minWidth: 'max-content' }}>
               {overdue.tasks.length > 0 && (
                 <Column col={overdue} isOverdue />
               )}
@@ -250,7 +297,7 @@ export default function WeeklyTimeline({ standardTasks, monthlyInstances, loadin
                 <Column col={nextWeek} />
               )}
               {later.tasks.length > 0 && (
-                <Column col={later} />
+                <Column col={later} isLater listMaxHeight={innerMax} hiddenCount={laterHidden} />
               )}
             </div>
           </div>
