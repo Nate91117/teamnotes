@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react'
 import { useTeam } from '../../contexts/TeamContext'
+import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
 import GoalCard from './GoalCard'
 import MemberViewDashboard from './MemberViewDashboard'
 import GoalFormModal from './GoalFormModal'
 import CategoryManagementModal from './CategoryManagementModal'
+import AddGoalTaskModal from './AddGoalTaskModal'
 import Button from '../common/Button'
 import LoadingSpinner from '../common/LoadingSpinner'
 
@@ -32,6 +34,7 @@ function dateToNoonUTC(dateStr) {
 
 export default function LeaderDashboard({ onTaskUpdate }) {
   const { currentTeam, goals, createGoal, updateGoal, deleteGoal, updateGoalMembers, members, categories, createCategory, updateCategory, deleteCategory } = useTeam()
+  const { user } = useAuth()
   const [showModal, setShowModal] = useState(false)
   const [showCategoryModal, setShowCategoryModal] = useState(false)
   const [editingGoal, setEditingGoal] = useState(null)
@@ -55,6 +58,9 @@ export default function LeaderDashboard({ onTaskUpdate }) {
   const [linkedEditDueDate, setLinkedEditDueDate] = useState('')
   const [linkedEditAssignees, setLinkedEditAssignees] = useState([])
   const [linkedEditSaving, setLinkedEditSaving] = useState(false)
+
+  // "Add task to goal" modal
+  const [addTaskGoal, setAddTaskGoal] = useState(null)
 
   useEffect(() => {
     if (currentTeam) {
@@ -333,6 +339,40 @@ export default function LeaderDashboard({ onTaskUpdate }) {
     )
   }
 
+  // Create a new task already linked to a goal (from the goal card's "+ Add task")
+  async function handleCreateGoalTask({ title, status, due_date, assignees }) {
+    if (!addTaskGoal || !currentTeam || !user) return
+
+    const { data, error } = await supabase
+      .from('tasks')
+      .insert({
+        user_id: user.id,
+        team_id: currentTeam.id,
+        title,
+        status,
+        due_date,
+        linked_goal_id: addTaskGoal.id,
+        shared_to_dashboard: true,
+        completed_at: status === 'done' ? new Date().toISOString() : null
+      })
+      .select()
+      .single()
+
+    if (error) {
+      console.error('Error creating goal task:', error)
+      return
+    }
+
+    if (data && assignees.length > 0) {
+      await supabase
+        .from('task_assignees')
+        .insert(assignees.map(uid => ({ task_id: data.id, user_id: uid })))
+    }
+
+    await fetchLinkedItems()
+    onTaskUpdate?.()
+  }
+
   const linkedTaskEditProps = {
     editingTask: editingLinkedTask,
     editTitle: linkedEditTitle,
@@ -467,6 +507,7 @@ export default function LeaderDashboard({ onTaskUpdate }) {
                       linkedItems={linkedItems[goal.id] || []}
                       members={members}
                       linkedTaskEdit={linkedTaskEditProps}
+                      onAddTask={setAddTaskGoal}
                     />
                   ))}
                 </div>
@@ -493,6 +534,7 @@ export default function LeaderDashboard({ onTaskUpdate }) {
                 linkedItems={linkedItems[goal.id] || []}
                 members={members}
                 linkedTaskEdit={linkedTaskEditProps}
+                onAddTask={setAddTaskGoal}
               />
             ))}
           </div>
@@ -550,6 +592,17 @@ export default function LeaderDashboard({ onTaskUpdate }) {
         updateCategory={updateCategory}
         deleteCategory={deleteCategory}
       />
+
+      {/* Add Task to Goal Modal */}
+      {addTaskGoal && (
+        <AddGoalTaskModal
+          isOpen={!!addTaskGoal}
+          goal={addTaskGoal}
+          members={members}
+          onClose={() => setAddTaskGoal(null)}
+          onCreate={handleCreateGoalTask}
+        />
+      )}
     </div>
   )
 }

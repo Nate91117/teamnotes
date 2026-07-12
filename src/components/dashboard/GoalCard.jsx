@@ -35,7 +35,8 @@ export default function GoalCard({
   isLeader,
   linkedItems = [],
   members = [],
-  linkedTaskEdit
+  linkedTaskEdit,
+  onAddTask
 }) {
   const [expanded, setExpanded] = useState(false)
   const [showNotes, setShowNotes] = useState(goal.show_notes || false)
@@ -329,6 +330,19 @@ export default function GoalCard({
             </div>
           )}
         </div>
+      )}
+
+      {/* Add task to this goal */}
+      {onAddTask && (
+        <button
+          onClick={() => onAddTask(goal)}
+          className="mt-3 flex items-center gap-1 text-sm font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 transition-colors"
+        >
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+          </svg>
+          Add task
+        </button>
       )}
     </div>
   )
