@@ -11,7 +11,7 @@ import Modal from '../components/common/Modal'
 
 export default function Dashboard() {
   const { currentTeam, isLeader, loading, createTeam, teams } = useTeam()
-  const { standardTasks, monthlyInstances, todoTasks, inProgressTasks, loading: tasksLoading, refreshTasks } = useTasks()
+  const { standardTasks, monthlyInstances, todoTasks, inProgressTasks, loading: tasksLoading, refreshTasks, updateTask } = useTasks()
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [teamName, setTeamName] = useState('')
   const [creating, setCreating] = useState(false)
@@ -111,7 +111,7 @@ export default function Dashboard() {
 
   return (
     <Layout>
-      <WeeklyTimeline standardTasks={standardTasks} monthlyInstances={monthlyInstances} loading={tasksLoading} />
+      <WeeklyTimeline standardTasks={standardTasks} monthlyInstances={monthlyInstances} loading={tasksLoading} onStatusChange={(id, status) => updateTask(id, { status })} />
       {isLeader
         ? <LeaderDashboard onTaskUpdate={refreshTasks} />
         : <MemberDashboard todoTasks={todoTasks} inProgressTasks={inProgressTasks} tasksLoading={tasksLoading} />}

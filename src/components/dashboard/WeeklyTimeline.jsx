@@ -1,6 +1,14 @@
-import { useState, useRef, useLayoutEffect } from 'react'
+import { useState, useRef, useEffect, useLayoutEffect } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
 import { useTeam } from '../../hooks/useTeam'
+
+// Canonical task statuses with short labels + tint classes for the compact picker
+const STATUS_OPTIONS = [
+  { value: 'todo', label: 'To Do', active: 'bg-gray-500 text-white', idle: 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600' },
+  { value: 'in_progress', label: 'In Progress', active: 'bg-yellow-500 text-white', idle: 'bg-yellow-50 text-yellow-700 hover:bg-yellow-100 dark:bg-yellow-900/30 dark:text-yellow-300 dark:hover:bg-yellow-900/50' },
+  { value: 'on_hold', label: 'On Hold', active: 'bg-orange-500 text-white', idle: 'bg-orange-50 text-orange-700 hover:bg-orange-100 dark:bg-orange-900/30 dark:text-orange-300 dark:hover:bg-orange-900/50' },
+  { value: 'done', label: 'Done', active: 'bg-green-600 text-white', idle: 'bg-green-50 text-green-700 hover:bg-green-100 dark:bg-green-900/30 dark:text-green-300 dark:hover:bg-green-900/50' },
+]
 
 function getTodayCST() {
   return new Intl.DateTimeFormat('en-CA', {
@@ -69,15 +77,42 @@ function buildWeekColumns(tasks, hideCompleted) {
   return { overdue, dayColumns, nextWeek, later }
 }
 
-function TaskItem({ task, showDate }) {
+function TaskItem({ task, showDate, onStatusChange }) {
   const isDone = task.status === 'done'
+  const [editing, setEditing] = useState(false)
+  const ref = useRef(null)
   const dateLabel = showDate && task.due_date
     ? (/^\d{4}-\d{2}-\d{2}$/.test(task.due_date)
         ? new Date(task.due_date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
         : new Date(task.due_date).toLocaleDateString('en-US', { timeZone: 'America/Chicago', month: 'short', day: 'numeric' }))
     : null
+
+  // Dismiss the picker on Escape or an outside click
+  useEffect(() => {
+    if (!editing) return
+    const onKey = (e) => { if (e.key === 'Escape') setEditing(false) }
+    const onDown = (e) => { if (ref.current && !ref.current.contains(e.target)) setEditing(false) }
+    document.addEventListener('keydown', onKey)
+    document.addEventListener('mousedown', onDown)
+    return () => {
+      document.removeEventListener('keydown', onKey)
+      document.removeEventListener('mousedown', onDown)
+    }
+  }, [editing])
+
+  function pick(value) {
+    if (value !== task.status) onStatusChange?.(task.id, value)
+    setEditing(false)
+  }
+
   return (
-    <div data-task-item className={`py-1 px-1.5 rounded ${isDone ? 'opacity-50' : ''}`}>
+    <div
+      data-task-item
+      ref={ref}
+      onDoubleClick={onStatusChange ? () => setEditing(true) : undefined}
+      title={onStatusChange && !editing ? 'Double-click to change status' : undefined}
+      className={`py-1 px-1.5 rounded select-none ${onStatusChange ? 'cursor-pointer' : ''} ${isDone && !editing ? 'opacity-50' : ''}`}
+    >
       <span className={`text-xs leading-tight ${
         isDone ? 'line-through text-gray-400 dark:text-gray-500' : 'text-gray-800 dark:text-gray-200'
       }`}>
@@ -86,11 +121,25 @@ function TaskItem({ task, showDate }) {
           <span className="ml-1.5 text-[10px] text-gray-400 dark:text-gray-500 font-normal">{dateLabel}</span>
         )}
       </span>
+      {editing && (
+        <div className="mt-1 flex flex-wrap gap-1">
+          {STATUS_OPTIONS.map(opt => (
+            <button
+              key={opt.value}
+              type="button"
+              onClick={() => pick(opt.value)}
+              className={`px-1.5 py-0.5 rounded text-[10px] font-medium transition-colors ${opt.value === task.status ? opt.active : opt.idle}`}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
 
-function TaskGroup({ label, tasks, showDate }) {
+function TaskGroup({ label, tasks, showDate, onStatusChange }) {
   if (tasks.length === 0) return null
   return (
     <div>
@@ -98,13 +147,13 @@ function TaskGroup({ label, tasks, showDate }) {
         {label}
       </p>
       {tasks.map(task => (
-        <TaskItem key={task.id} task={task} showDate={showDate} />
+        <TaskItem key={task.id} task={task} showDate={showDate} onStatusChange={onStatusChange} />
       ))}
     </div>
   )
 }
 
-function Column({ col, isOverdue, isLater, listMaxHeight, hiddenCount }) {
+function Column({ col, isOverdue, isLater, listMaxHeight, hiddenCount, onStatusChange }) {
   const baseClasses = 'min-w-[150px] max-w-[200px] rounded-xl border p-3 flex flex-col relative'
   const colorClasses = col.isToday
     ? 'bg-primary-50 border-primary-300 dark:bg-primary-900/20 dark:border-primary-600'
@@ -149,12 +198,12 @@ function Column({ col, isOverdue, isLater, listMaxHeight, hiddenCount }) {
         {col.tasks.length === 0 ? (
           <p className="text-xs text-gray-300 dark:text-gray-600 text-center py-1.5">—</p>
         ) : isLater ? (
-          col.tasks.map(task => <TaskItem key={task.id} task={task} showDate={false} />)
+          col.tasks.map(task => <TaskItem key={task.id} task={task} showDate={false} onStatusChange={onStatusChange} />)
         ) : (
           <>
-            <TaskGroup label="Weekly" tasks={weekly} showDate={isOverdue} />
-            <TaskGroup label="Monthly" tasks={monthly} showDate={isOverdue} />
-            <TaskGroup label="Tasks" tasks={normal} showDate={isOverdue} />
+            <TaskGroup label="Weekly" tasks={weekly} showDate={isOverdue} onStatusChange={onStatusChange} />
+            <TaskGroup label="Monthly" tasks={monthly} showDate={isOverdue} onStatusChange={onStatusChange} />
+            <TaskGroup label="Tasks" tasks={normal} showDate={isOverdue} onStatusChange={onStatusChange} />
           </>
         )}
       </div>
@@ -167,7 +216,7 @@ function Column({ col, isOverdue, isLater, listMaxHeight, hiddenCount }) {
   )
 }
 
-export default function WeeklyTimeline({ standardTasks, monthlyInstances, loading }) {
+export default function WeeklyTimeline({ standardTasks, monthlyInstances, loading, onStatusChange }) {
   const { user } = useAuth()
   const { members } = useTeam()
   const [show, setShow] = useState(true)
@@ -288,16 +337,16 @@ export default function WeeklyTimeline({ standardTasks, monthlyInstances, loadin
           <div className="overflow-x-auto pb-1 -mx-1 px-1">
             <div ref={rowRef} className="flex gap-2.5" style={{ minWidth: 'max-content' }}>
               {overdue.tasks.length > 0 && (
-                <Column col={overdue} isOverdue />
+                <Column col={overdue} isOverdue onStatusChange={onStatusChange} />
               )}
               {dayColumns.map(col => (
-                <Column key={col.key} col={col} />
+                <Column key={col.key} col={col} onStatusChange={onStatusChange} />
               ))}
               {nextWeek.tasks.length > 0 && (
-                <Column col={nextWeek} />
+                <Column col={nextWeek} onStatusChange={onStatusChange} />
               )}
               {later.tasks.length > 0 && (
-                <Column col={later} isLater listMaxHeight={innerMax} hiddenCount={laterHidden} />
+                <Column col={later} isLater listMaxHeight={innerMax} hiddenCount={laterHidden} onStatusChange={onStatusChange} />
               )}
             </div>
           </div>
