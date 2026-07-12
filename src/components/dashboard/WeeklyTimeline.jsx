@@ -22,23 +22,22 @@ function buildWeekColumns(tasks, hideCompleted) {
   const dayMs = 24 * 60 * 60 * 1000
   const todayDate = new Date(today + 'T12:00:00')
   const dayOfWeek = todayDate.getDay() // 0=Sun, 1=Mon...6=Sat
-  const daysFromMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1
-  const mondayDate = new Date(todayDate.getTime() - daysFromMonday * dayMs)
+  // Week starts on Sunday (matches the weekly-task engine's getCurrentWeek)
+  const weekStartDate = new Date(todayDate.getTime() - dayOfWeek * dayMs)
 
-  const DAY_NAMES = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+  const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 
   const dayColumns = DAY_NAMES.map((label, i) => {
-    const d = new Date(mondayDate.getTime() + i * dayMs)
+    const d = new Date(weekStartDate.getTime() + i * dayMs)
     const dateStr = d.toLocaleDateString('en-CA', { timeZone: 'UTC' })
     return { key: `day-${i}`, label, dateStr, isToday: dateStr === today, tasks: [] }
   })
 
-  const mondayStr = dayColumns[0].dateStr
-  const sundayStr = dayColumns[6].dateStr
-  const nextMondayDate = new Date(mondayDate.getTime() + 7 * dayMs)
-  const nextSundayDate = new Date(mondayDate.getTime() + 13 * dayMs)
-  const nextMondayStr = nextMondayDate.toLocaleDateString('en-CA', { timeZone: 'UTC' })
-  const nextSundayStr = nextSundayDate.toLocaleDateString('en-CA', { timeZone: 'UTC' })
+  const lastStr = dayColumns[6].dateStr // Saturday
+  const nextWeekStartDate = new Date(weekStartDate.getTime() + 7 * dayMs)
+  const nextWeekEndDate = new Date(weekStartDate.getTime() + 13 * dayMs)
+  const nextWeekStartStr = nextWeekStartDate.toLocaleDateString('en-CA', { timeZone: 'UTC' })
+  const nextWeekEndStr = nextWeekEndDate.toLocaleDateString('en-CA', { timeZone: 'UTC' })
 
   const overdue = { key: 'overdue', label: 'Overdue', tasks: [] }
   const nextWeek = { key: 'next-week', label: 'Next Week', tasks: [] }
@@ -59,15 +58,14 @@ function buildWeekColumns(tasks, hideCompleted) {
       if (isWeekly) {
         // Weekly tasks always live on their weekday — never overdue
         const taskDow = new Date(taskDateStr + 'T12:00:00').getDay() // 0=Sun…6=Sat
-        const colIndex = taskDow === 0 ? 6 : taskDow - 1            // 0=Mon…6=Sun
-        dayColumns[colIndex].tasks.push(task)
+        dayColumns[taskDow].tasks.push(task)                         // columns are Sun…Sat
       } else {
         overdue.tasks.push(task)
       }
-    } else if (taskDateStr <= sundayStr) {
+    } else if (taskDateStr <= lastStr) {
       const col = dayColumns.find(c => c.dateStr === taskDateStr)
       if (col) col.tasks.push(task)
-    } else if (taskDateStr >= nextMondayStr && taskDateStr <= nextSundayStr) {
+    } else if (taskDateStr >= nextWeekStartStr && taskDateStr <= nextWeekEndStr) {
       nextWeek.tasks.push(task)
     } else {
       later.tasks.push(task)
