@@ -482,8 +482,8 @@ export default function LeaderDashboard({ onTaskUpdate }) {
           No categories yet. Click "Manage Categories" to create some!
         </div>
       ) : (
-        <div className="overflow-x-auto pb-2 mb-8">
-          <div className="flex gap-6" style={{ minWidth: 'max-content' }}>
+        <div className="overflow-x-auto pb-2 mb-8" style={{ transform: 'scaleY(-1)' }}>
+          <div className="flex gap-6" style={{ minWidth: 'max-content', transform: 'scaleY(-1)' }}>
           {categories.map(cat => {
             const colors = categoryColors[cat.color] || categoryColors.gray
             const categoryGoals = goalsByCategory[cat.id] || []
