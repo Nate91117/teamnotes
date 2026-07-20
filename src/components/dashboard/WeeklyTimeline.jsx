@@ -214,7 +214,15 @@ function Column({ col, isOverdue, isLater, listMaxHeight, hiddenCount, onStatusC
   )
 }
 
-export default function WeeklyTimeline({ standardTasks, monthlyInstances, loading, onStatusChange }) {
+export default function WeeklyTimeline({
+  standardTasks,
+  monthlyInstances,
+  loading,
+  onStatusChange,
+  title = 'This Week',
+  showMemberFilter = true,
+  emptyText = 'No tasks with due dates. Add due dates to tasks to see them here.',
+}) {
   const { user } = useAuth()
   const { members } = useTeam()
   const [show, setShow] = useState(true)
@@ -292,8 +300,8 @@ export default function WeeklyTimeline({ standardTasks, monthlyInstances, loadin
     <div className="mb-8">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-3">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">This Week</h2>
-          {show && sortedMembers.length > 0 && (
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{title}</h2>
+          {show && showMemberFilter && sortedMembers.length > 0 && (
             <select
               value={activeFilter || ''}
               onChange={e => setSelectedMemberId(e.target.value || null)}
@@ -329,7 +337,7 @@ export default function WeeklyTimeline({ standardTasks, monthlyInstances, loadin
       {show && (
         !hasAnything ? (
           <div className="card text-sm text-gray-400 dark:text-gray-500 text-center py-6">
-            No tasks with due dates. Add due dates to tasks to see them here.
+            {emptyText}
           </div>
         ) : (
           <div className="overflow-x-auto pb-1 -mx-1 px-1">

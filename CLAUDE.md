@@ -57,6 +57,8 @@ src/
     usePersonalGoals.js  - Personal goals CRUD, year filtering, task/goal links (batch queries)
     useReports.js        - Reports CRUD (leader-only feature)
     useTeam.js           - Wrapper for TeamContext
+    useDailyTodos.js     - Read-only fetch of Nate's personal to-do list from the
+                           daily-helper app's /api/todos endpoint (the app's only external fetch)
   pages/
     Login.jsx, Signup.jsx, Dashboard.jsx, MyTasks.jsx,
     MyNotes.jsx, PersonalGoals.jsx, TeamSettings.jsx, Settings.jsx
@@ -109,6 +111,17 @@ src/
 - Simple items: title assigned to a team member
 - Grouped by member in the dashboard view (same visual pattern as "By Member")
 - Inline create/edit/delete
+
+## Personal To-Do List View (cross-app)
+- The dashboard shows Nate's personal to-do list from the **daily-helper** app in a second
+  `WeeklyTimeline` titled "My To-Do List", rendered directly above the work "This Week".
+- daily-helper's to-dos live in Neon (server-only), so TeamNotes reads them via a bearer-token
+  `GET /api/todos` endpoint on daily-helper. `useDailyTodos` fetches + maps them to the task shape.
+- `WeeklyTimeline` takes optional props `title`, `showMemberFilter`, `emptyText` so one component
+  serves both the work timeline (defaults) and the personal read-only view (no member filter,
+  no `onStatusChange`). Undated to-dos are hidden (timeline only buckets dated items).
+- Config via build-time env vars `VITE_TODOS_API_URL` + `VITE_TODOS_API_TOKEN` (GitHub Actions
+  secrets; token must match daily-helper's `TEAMNOTES_TODOS_SECRET`). Unset URL → section hidden.
 
 ## Code Patterns & Conventions
 
