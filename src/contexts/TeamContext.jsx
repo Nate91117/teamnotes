@@ -424,6 +424,19 @@ export function TeamProvider({ children }) {
     setGoals(reorderedGoals.map((g, i) => ({ ...g, sort_order: i })))
   }
 
+  // Category order drives the left-to-right column order on the leader dashboard.
+  async function reorderCategories(reorderedCategories) {
+    const updates = reorderedCategories.map((cat, index) =>
+      supabase
+        .from('categories')
+        .update({ sort_order: index })
+        .eq('id', cat.id)
+    )
+
+    await Promise.all(updates)
+    setCategories(reorderedCategories.map((c, i) => ({ ...c, sort_order: i })))
+  }
+
   async function inviteMember(email) {
     if (!currentTeam) return { error: 'No team selected' }
 
@@ -523,6 +536,7 @@ export function TeamProvider({ children }) {
     createCategory,
     updateCategory,
     deleteCategory,
+    reorderCategories,
     inviteMember,
     createPlaceholderMember,
     removeMember,

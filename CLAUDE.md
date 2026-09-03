@@ -41,10 +41,9 @@ src/
   components/
     auth/       - LoginForm, SignupForm, ProtectedRoute
     common/     - Layout, Button, Modal, LoadingSpinner
-    dashboard/  - LeaderDashboard ("+ New Task" opens the shared tasks/TaskEditor so a task can be
-                  created without leaving the dashboard; always visible, both Goals and By Member views),
-                  MemberDashboard, MemberViewDashboard (inline edit + full TaskEditor modal),
-                  GoalCard, GoalFormModal, CategoryManagementModal, ReportsDashboard
+    dashboard/  - LeaderDashboard, MemberDashboard, MemberViewDashboard (inline edit + full TaskEditor modal),
+                  GoalCard ("+ Add task" opens the shared tasks/TaskEditor pre-linked to that goal),
+                  GoalFormModal, CategoryManagementModal (drag to reorder categories), ReportsDashboard
     tasks/      - TasksList (kanban+list views with 4 columns: To Do/In Progress/On Hold/Done, standard/monthly toggle), TaskCard, TaskEditor
     notes/      - NotesList, NoteCard, NoteEditor
     goals/      - PersonalGoalsList, PersonalGoalCard, PersonalGoalEditor
@@ -86,7 +85,7 @@ src/
 - **tasks** - User tasks (title, description, status: todo|in_progress|done|on_hold, due_date, linked_goal_id, shared_to_dashboard, notes, sort_order, completed_at, is_monthly, monthly_source_id, monthly_month)
 - **notes** - User notes (title, content, linked_goal_id, shared_to_dashboard)
 - **personal_goals** - Personal goals (title, description, status, year, sort_order)
-- **categories** - Goal categories (name, color, sort_order)
+- **categories** - Goal categories (name, color, sort_order — drives the dashboard's left-to-right column order)
 - **invitations** - Email invites (email, team_id, status: pending|accepted)
 - **reports** - Leader-assigned report items (title, team_id, assigned_user_id, created_by)
 

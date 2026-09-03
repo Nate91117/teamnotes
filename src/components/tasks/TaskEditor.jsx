@@ -18,7 +18,7 @@ function dateToNoonUTC(dateStr) {
 
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 
-export default function TaskEditor({ task, isOpen, onClose, onSave, isMonthlyMode = false, isWeeklyMode = false }) {
+export default function TaskEditor({ task, isOpen, onClose, onSave, isMonthlyMode = false, isWeeklyMode = false, initialGoalId = '' }) {
   const { goals, members, isLeader } = useTeam()
   const { activeGoals: activePersonalGoals } = usePersonalGoals()
   const [title, setTitle] = useState('')
@@ -56,16 +56,17 @@ export default function TaskEditor({ task, isOpen, onClose, onSave, isMonthlyMod
       setDescription('')
       setNotes('')
       setStatus('todo')
-      setLinkedGoalId('')
+      setLinkedGoalId(initialGoalId || '')
       setLinkedPersonalGoalIds([])
       setAssigneeIds([])
-      setSharedToDashboard(false)
+      // Opened from a goal card: share by default, since the goal card only lists shared tasks.
+      setSharedToDashboard(!!initialGoalId)
       setDueDate('')
       setIsMonthly(isMonthlyMode)
       setIsWeekly(isWeeklyMode)
       setWeeklyDay(1)
     }
-  }, [task])
+  }, [task, isOpen, initialGoalId])
 
   function togglePersonalGoal(pgId) {
     setLinkedPersonalGoalIds(prev =>

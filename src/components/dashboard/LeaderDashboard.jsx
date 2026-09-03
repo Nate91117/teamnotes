@@ -6,7 +6,6 @@ import GoalCard from './GoalCard'
 import MemberViewDashboard from './MemberViewDashboard'
 import GoalFormModal from './GoalFormModal'
 import CategoryManagementModal from './CategoryManagementModal'
-import AddGoalTaskModal from './AddGoalTaskModal'
 import TaskEditor from '../tasks/TaskEditor'
 import Button from '../common/Button'
 import LoadingSpinner from '../common/LoadingSpinner'
@@ -34,7 +33,7 @@ function dateToNoonUTC(dateStr) {
 }
 
 export default function LeaderDashboard({ onTaskUpdate, createTask }) {
-  const { currentTeam, goals, createGoal, updateGoal, deleteGoal, updateGoalMembers, members, categories, createCategory, updateCategory, deleteCategory } = useTeam()
+  const { currentTeam, goals, createGoal, updateGoal, deleteGoal, updateGoalMembers, members, categories, createCategory, updateCategory, deleteCategory, reorderCategories } = useTeam()
   const { user } = useAuth()
   const [showModal, setShowModal] = useState(false)
   const [showCategoryModal, setShowCategoryModal] = useState(false)
@@ -62,7 +61,6 @@ export default function LeaderDashboard({ onTaskUpdate, createTask }) {
 
   // "Add task to goal" modal
   const [addTaskGoal, setAddTaskGoal] = useState(null)
-  const [showTaskEditor, setShowTaskEditor] = useState(false)
 
   useEffect(() => {
     if (currentTeam) {
@@ -342,43 +340,11 @@ export default function LeaderDashboard({ onTaskUpdate, createTask }) {
   }
 
   // Create a new task already linked to a goal (from the goal card's "+ Add task")
-  async function handleCreateGoalTask({ title, status, due_date, assignees }) {
-    if (!addTaskGoal || !currentTeam || !user) return
-
-    const { data, error } = await supabase
-      .from('tasks')
-      .insert({
-        user_id: user.id,
-        team_id: currentTeam.id,
-        title,
-        status,
-        due_date,
-        linked_goal_id: addTaskGoal.id,
-        shared_to_dashboard: true,
-        completed_at: status === 'done' ? new Date().toISOString() : null
-      })
-      .select()
-      .single()
-
-    if (error) {
-      console.error('Error creating goal task:', error)
-      return
-    }
-
-    if (data && assignees.length > 0) {
-      await supabase
-        .from('task_assignees')
-        .insert(assignees.map(uid => ({ task_id: data.id, user_id: uid })))
-    }
-
-    await fetchLinkedItems()
-    onTaskUpdate?.()
-  }
-
-  // Same editor as the Tasks tab, so a task can be created without leaving the dashboard.
-  async function handleCreateTask(data) {
+  // Goal cards open the same editor as the Tasks tab, pre-linked to that goal.
+  async function handleCreateGoalTask(data) {
     await createTask?.(data)
     await Promise.all([fetchLinkedItems(), fetchMemberData()])
+    onTaskUpdate?.()
   }
 
   const linkedTaskEditProps = {
@@ -468,9 +434,6 @@ export default function LeaderDashboard({ onTaskUpdate, createTask }) {
               </Button>
             </>
           )}
-          <Button onClick={() => setShowTaskEditor(true)}>
-            + New Task
-          </Button>
         </div>
       </div>
 
@@ -602,24 +565,17 @@ export default function LeaderDashboard({ onTaskUpdate, createTask }) {
         createCategory={createCategory}
         updateCategory={updateCategory}
         deleteCategory={deleteCategory}
+        reorderCategories={reorderCategories}
       />
 
-      {/* New Task (same editor as the Tasks tab) */}
-      <TaskEditor
-        task={null}
-        isOpen={showTaskEditor}
-        onClose={() => setShowTaskEditor(false)}
-        onSave={handleCreateTask}
-      />
-
-      {/* Add Task to Goal Modal */}
+      {/* Add task to a goal - full task editor, pre-linked to the goal */}
       {addTaskGoal && (
-        <AddGoalTaskModal
+        <TaskEditor
+          task={null}
           isOpen={!!addTaskGoal}
-          goal={addTaskGoal}
-          members={members}
+          initialGoalId={addTaskGoal.id}
           onClose={() => setAddTaskGoal(null)}
-          onCreate={handleCreateGoalTask}
+          onSave={handleCreateGoalTask}
         />
       )}
     </div>
