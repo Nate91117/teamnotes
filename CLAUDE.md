@@ -168,7 +168,7 @@ await supabase.from('junction').insert(newIds.map(...))
 
 ## Deployment
 - Push to `master` triggers `.github/workflows/deploy.yml`
-- Builds with Node 20, injects Supabase vars from GitHub Secrets
+- Builds with Node 24, injects Supabase vars from GitHub Secrets
 - Deploys to GitHub Pages at `/teamnotes/` base path
 
 ## Tasks
