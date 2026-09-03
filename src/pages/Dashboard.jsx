@@ -125,7 +125,7 @@ export default function Dashboard() {
       )}
       <WeeklyTimeline standardTasks={standardTasks} monthlyInstances={monthlyInstances} loading={tasksLoading} onStatusChange={(id, status) => updateTask(id, { status })} />
       {isLeader
-        ? <LeaderDashboard onTaskUpdate={refreshTasks} createTask={createTask} />
+        ? <LeaderDashboard onTaskUpdate={refreshTasks} createTask={createTask} updateTask={updateTask} />
         : <MemberDashboard todoTasks={todoTasks} inProgressTasks={inProgressTasks} tasksLoading={tasksLoading} />}
     </Layout>
   )

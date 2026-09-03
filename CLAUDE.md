@@ -42,7 +42,8 @@ src/
     auth/       - LoginForm, SignupForm, ProtectedRoute
     common/     - Layout, Button, Modal, LoadingSpinner
     dashboard/  - LeaderDashboard, MemberDashboard, MemberViewDashboard (inline edit + full TaskEditor modal),
-                  GoalCard ("+ Add task" opens the shared tasks/TaskEditor pre-linked to that goal),
+                  GoalCard (both "+ Add task" and clicking a linked task open the shared
+                  tasks/TaskEditor - pre-linked to the goal on create, full row on edit),
                   GoalFormModal, CategoryManagementModal (drag to reorder categories), ReportsDashboard
     tasks/      - TasksList (kanban+list views with 4 columns: To Do/In Progress/On Hold/Done, standard/monthly toggle), TaskCard, TaskEditor
     notes/      - NotesList, NoteCard, NoteEditor

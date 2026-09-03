@@ -32,7 +32,7 @@ function dateToNoonUTC(dateStr) {
   return `${dateStr}T12:00:00.000Z`
 }
 
-export default function LeaderDashboard({ onTaskUpdate, createTask }) {
+export default function LeaderDashboard({ onTaskUpdate, createTask, updateTask }) {
   const { currentTeam, goals, createGoal, updateGoal, deleteGoal, updateGoalMembers, members, categories, createCategory, updateCategory, deleteCategory, reorderCategories } = useTeam()
   const { user } = useAuth()
   const [showModal, setShowModal] = useState(false)
@@ -52,12 +52,8 @@ export default function LeaderDashboard({ onTaskUpdate, createTask }) {
   const [memberNotes, setMemberNotes] = useState({})
 
   // Inline linked task editing state
+  // Full task row for the linked-task editor opened from a goal card.
   const [editingLinkedTask, setEditingLinkedTask] = useState(null)
-  const [linkedEditTitle, setLinkedEditTitle] = useState('')
-  const [linkedEditStatus, setLinkedEditStatus] = useState('todo')
-  const [linkedEditDueDate, setLinkedEditDueDate] = useState('')
-  const [linkedEditAssignees, setLinkedEditAssignees] = useState([])
-  const [linkedEditSaving, setLinkedEditSaving] = useState(false)
 
   // "Add task to goal" modal
   const [addTaskGoal, setAddTaskGoal] = useState(null)
@@ -277,66 +273,33 @@ export default function LeaderDashboard({ onTaskUpdate, createTask }) {
     )
   }
 
-  // Inline linked task editing functions
-  function openLinkedTaskEdit(task) {
-    setEditingLinkedTask(task)
-    setLinkedEditTitle(task.title)
-    setLinkedEditStatus(task.status)
-    setLinkedEditDueDate(getDateInCentral(task.due_date))
-    setLinkedEditAssignees(task.assignees || [])
+  // Clicking a linked task on a goal card opens the full TaskEditor. The goal-card
+  // rows only carry a few columns, so pull the whole row (plus assignees and personal
+  // goal links) to seed the editor the same way the Tasks tab does.
+  async function openLinkedTaskEditor(item) {
+    const [taskRes, assigneesRes, pgLinksRes] = await Promise.all([
+      supabase.from('tasks').select('*, goals (id, title)').eq('id', item.id).single(),
+      supabase.from('task_assignees').select('user_id').eq('task_id', item.id),
+      supabase.from('task_personal_goal_links').select('personal_goal_id').eq('task_id', item.id)
+    ])
+
+    if (taskRes.error || !taskRes.data) {
+      console.error('Error loading linked task:', taskRes.error)
+      return
+    }
+
+    setEditingLinkedTask({
+      ...taskRes.data,
+      assignees: (assigneesRes.data || []).map(a => a.user_id),
+      linked_personal_goal_ids: (pgLinksRes.data || []).map(l => l.personal_goal_id)
+    })
   }
 
-  function cancelLinkedTaskEdit() {
-    setEditingLinkedTask(null)
-    setLinkedEditTitle('')
-    setLinkedEditStatus('todo')
-    setLinkedEditDueDate('')
-    setLinkedEditAssignees([])
-  }
-
-  async function saveLinkedTaskEdit() {
-    if (!editingLinkedTask || !linkedEditTitle.trim()) return
-    setLinkedEditSaving(true)
-
-    const updates = {
-      title: linkedEditTitle.trim(),
-      status: linkedEditStatus,
-      due_date: dateToNoonUTC(linkedEditDueDate)
-    }
-
-    if (linkedEditStatus === 'done' && editingLinkedTask.status !== 'done') {
-      updates.completed_at = new Date().toISOString()
-    } else if (linkedEditStatus !== 'done' && editingLinkedTask.status === 'done') {
-      updates.completed_at = null
-    }
-
-    await supabase
-      .from('tasks')
-      .update(updates)
-      .eq('id', editingLinkedTask.id)
-
-    await supabase
-      .from('task_assignees')
-      .delete()
-      .eq('task_id', editingLinkedTask.id)
-    if (linkedEditAssignees.length > 0) {
-      await supabase
-        .from('task_assignees')
-        .insert(linkedEditAssignees.map(uid => ({ task_id: editingLinkedTask.id, user_id: uid })))
-    }
-
-    setLinkedEditSaving(false)
-    setEditingLinkedTask(null)
-    fetchLinkedItems()
+  async function handleUpdateLinkedTask(data) {
+    if (!editingLinkedTask) return
+    await updateTask?.(editingLinkedTask.id, data)
+    await Promise.all([fetchLinkedItems(), fetchMemberData()])
     onTaskUpdate?.()
-  }
-
-  function toggleLinkedTaskAssignee(memberId) {
-    setLinkedEditAssignees(prev =>
-      prev.includes(memberId)
-        ? prev.filter(id => id !== memberId)
-        : [...prev, memberId]
-    )
   }
 
   // Create a new task already linked to a goal (from the goal card's "+ Add task")
@@ -347,21 +310,6 @@ export default function LeaderDashboard({ onTaskUpdate, createTask }) {
     onTaskUpdate?.()
   }
 
-  const linkedTaskEditProps = {
-    editingTask: editingLinkedTask,
-    editTitle: linkedEditTitle,
-    setEditTitle: setLinkedEditTitle,
-    editStatus: linkedEditStatus,
-    setEditStatus: setLinkedEditStatus,
-    editDueDate: linkedEditDueDate,
-    setEditDueDate: setLinkedEditDueDate,
-    editAssignees: linkedEditAssignees,
-    toggleAssignee: toggleLinkedTaskAssignee,
-    saving: linkedEditSaving,
-    openEdit: openLinkedTaskEdit,
-    cancelEdit: cancelLinkedTaskEdit,
-    saveEdit: saveLinkedTaskEdit
-  }
 
   // Sort by due date (nulls last)
   function sortByDueDate(a, b) {
@@ -480,7 +428,7 @@ export default function LeaderDashboard({ onTaskUpdate, createTask }) {
                       isLeader={true}
                       linkedItems={linkedItems[goal.id] || []}
                       members={members}
-                      linkedTaskEdit={linkedTaskEditProps}
+                      onOpenTask={openLinkedTaskEditor}
                       onAddTask={setAddTaskGoal}
                     />
                   ))}
@@ -507,7 +455,7 @@ export default function LeaderDashboard({ onTaskUpdate, createTask }) {
                 isLeader={true}
                 linkedItems={linkedItems[goal.id] || []}
                 members={members}
-                linkedTaskEdit={linkedTaskEditProps}
+                onOpenTask={openLinkedTaskEditor}
                 onAddTask={setAddTaskGoal}
               />
             ))}
@@ -529,7 +477,7 @@ export default function LeaderDashboard({ onTaskUpdate, createTask }) {
                 isLeader={true}
                 linkedItems={linkedItems[goal.id] || []}
                 members={members}
-                linkedTaskEdit={linkedTaskEditProps}
+                onOpenTask={openLinkedTaskEditor}
               />
             ))}
           </div>
@@ -567,6 +515,16 @@ export default function LeaderDashboard({ onTaskUpdate, createTask }) {
         deleteCategory={deleteCategory}
         reorderCategories={reorderCategories}
       />
+
+      {/* Edit a linked task from a goal card - same full editor */}
+      {editingLinkedTask && (
+        <TaskEditor
+          task={editingLinkedTask}
+          isOpen={!!editingLinkedTask}
+          onClose={() => setEditingLinkedTask(null)}
+          onSave={handleUpdateLinkedTask}
+        />
+      )}
 
       {/* Add task to a goal - full task editor, pre-linked to the goal */}
       {addTaskGoal && (

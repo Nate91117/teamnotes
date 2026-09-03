@@ -35,7 +35,7 @@ export default function GoalCard({
   isLeader,
   linkedItems = [],
   members = [],
-  linkedTaskEdit,
+  onOpenTask,
   onAddTask
 }) {
   const [expanded, setExpanded] = useState(false)
@@ -216,73 +216,6 @@ export default function GoalCard({
                     : null
                   : null
 
-                // Inline editing for this linked task
-                if (isTask && linkedTaskEdit?.editingTask?.id === item.id) {
-                  const assigneeNames = (item.assignees || [])
-                    .map(uid => members.find(m => m.id === uid)?.display_name)
-                    .filter(Boolean)
-
-                  return (
-                    <div key={`${item.type}-${item.id}`} className="p-3 bg-blue-50 dark:bg-blue-900/30 rounded-lg border border-blue-200 dark:border-blue-700">
-                      <div className="space-y-2">
-                        <input
-                          type="text"
-                          value={linkedTaskEdit.editTitle}
-                          onChange={(e) => linkedTaskEdit.setEditTitle(e.target.value)}
-                          className="input text-sm w-full"
-                          placeholder="Task title"
-                        />
-                        <div className="flex gap-2">
-                          <select
-                            value={linkedTaskEdit.editStatus}
-                            onChange={(e) => linkedTaskEdit.setEditStatus(e.target.value)}
-                            className="input text-sm flex-1"
-                          >
-                            <option value="todo">To Do</option>
-                            <option value="in_progress">In Progress</option>
-                            <option value="on_hold">On Hold</option>
-                            <option value="done">Done</option>
-                          </select>
-                          <input
-                            type="date"
-                            value={linkedTaskEdit.editDueDate}
-                            onChange={(e) => linkedTaskEdit.setEditDueDate(e.target.value)}
-                            className="input text-sm flex-1"
-                          />
-                        </div>
-                        {/* Assignee multi-select pills */}
-                        <div>
-                          <span className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">Assignees:</span>
-                          <div className="flex flex-wrap gap-1">
-                            {members.map(member => (
-                              <button
-                                key={member.id}
-                                type="button"
-                                onClick={() => linkedTaskEdit.toggleAssignee(member.id)}
-                                className={`px-2 py-0.5 rounded-full text-xs font-medium transition-colors ${
-                                  linkedTaskEdit.editAssignees.includes(member.id)
-                                    ? 'bg-purple-600 text-white'
-                                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-600 dark:text-gray-300 dark:hover:bg-gray-500'
-                                }`}
-                              >
-                                {member.display_name}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                        <div className="flex gap-2 justify-end">
-                          <Button variant="secondary" size="small" onClick={linkedTaskEdit.cancelEdit} disabled={linkedTaskEdit.saving}>
-                            Cancel
-                          </Button>
-                          <Button size="small" onClick={linkedTaskEdit.saveEdit} disabled={linkedTaskEdit.saving || !linkedTaskEdit.editTitle.trim()}>
-                            {linkedTaskEdit.saving ? 'Saving...' : 'Save'}
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  )
-                }
-
                 // Get assignee display names for this item
                 const itemAssigneeNames = isTask
                   ? (item.assignees || [])
@@ -294,7 +227,7 @@ export default function GoalCard({
                   <div
                     key={`${item.type}-${item.id}`}
                     className={`p-2 bg-gray-50 dark:bg-gray-700 rounded-lg text-sm ${isDone ? 'opacity-60' : ''} ${isTask && isLeader ? 'cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors' : ''}`}
-                    onClick={isTask && isLeader && linkedTaskEdit ? () => linkedTaskEdit.openEdit(item) : undefined}
+                    onClick={isTask && isLeader && onOpenTask ? () => onOpenTask(item) : undefined}
                   >
                     {/* Row 1: type badge + truncated title + status badge */}
                     <div className="flex items-center gap-2 min-w-0">
