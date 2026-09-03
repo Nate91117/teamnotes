@@ -7,6 +7,7 @@ import MemberViewDashboard from './MemberViewDashboard'
 import GoalFormModal from './GoalFormModal'
 import CategoryManagementModal from './CategoryManagementModal'
 import AddGoalTaskModal from './AddGoalTaskModal'
+import TaskEditor from '../tasks/TaskEditor'
 import Button from '../common/Button'
 import LoadingSpinner from '../common/LoadingSpinner'
 
@@ -32,7 +33,7 @@ function dateToNoonUTC(dateStr) {
   return `${dateStr}T12:00:00.000Z`
 }
 
-export default function LeaderDashboard({ onTaskUpdate }) {
+export default function LeaderDashboard({ onTaskUpdate, createTask }) {
   const { currentTeam, goals, createGoal, updateGoal, deleteGoal, updateGoalMembers, members, categories, createCategory, updateCategory, deleteCategory } = useTeam()
   const { user } = useAuth()
   const [showModal, setShowModal] = useState(false)
@@ -61,6 +62,7 @@ export default function LeaderDashboard({ onTaskUpdate }) {
 
   // "Add task to goal" modal
   const [addTaskGoal, setAddTaskGoal] = useState(null)
+  const [showTaskEditor, setShowTaskEditor] = useState(false)
 
   useEffect(() => {
     if (currentTeam) {
@@ -373,6 +375,12 @@ export default function LeaderDashboard({ onTaskUpdate }) {
     onTaskUpdate?.()
   }
 
+  // Same editor as the Tasks tab, so a task can be created without leaving the dashboard.
+  async function handleCreateTask(data) {
+    await createTask?.(data)
+    await Promise.all([fetchLinkedItems(), fetchMemberData()])
+  }
+
   const linkedTaskEditProps = {
     editingTask: editingLinkedTask,
     editTitle: linkedEditTitle,
@@ -460,6 +468,9 @@ export default function LeaderDashboard({ onTaskUpdate }) {
               </Button>
             </>
           )}
+          <Button onClick={() => setShowTaskEditor(true)}>
+            + New Task
+          </Button>
         </div>
       </div>
 
@@ -591,6 +602,14 @@ export default function LeaderDashboard({ onTaskUpdate }) {
         createCategory={createCategory}
         updateCategory={updateCategory}
         deleteCategory={deleteCategory}
+      />
+
+      {/* New Task (same editor as the Tasks tab) */}
+      <TaskEditor
+        task={null}
+        isOpen={showTaskEditor}
+        onClose={() => setShowTaskEditor(false)}
+        onSave={handleCreateTask}
       />
 
       {/* Add Task to Goal Modal */}

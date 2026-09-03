@@ -41,7 +41,9 @@ src/
   components/
     auth/       - LoginForm, SignupForm, ProtectedRoute
     common/     - Layout, Button, Modal, LoadingSpinner
-    dashboard/  - LeaderDashboard, MemberDashboard, MemberViewDashboard (inline edit + full TaskEditor modal),
+    dashboard/  - LeaderDashboard ("+ New Task" opens the shared tasks/TaskEditor so a task can be
+                  created without leaving the dashboard; always visible, both Goals and By Member views),
+                  MemberDashboard, MemberViewDashboard (inline edit + full TaskEditor modal),
                   GoalCard, GoalFormModal, CategoryManagementModal, ReportsDashboard
     tasks/      - TasksList (kanban+list views with 4 columns: To Do/In Progress/On Hold/Done, standard/monthly toggle), TaskCard, TaskEditor
     notes/      - NotesList, NoteCard, NoteEditor

@@ -5,7 +5,7 @@ A React-based team collaboration app with Supabase backend for managing team goa
 ## Features
 
 ### Team Leader
-- **Project Dashboard** - Overview of all team goals organized by category
+- **Project Dashboard** - Overview of all team goals organized by category, with "+ New Task" to create a task inline
 - **Goal Management** - Create, edit, delete, and categorize team goals with due dates
 - **Member Assignment** - Assign goals and tasks to specific team members
 - **Members View** - See all shared tasks and notes per team member
