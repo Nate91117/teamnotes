@@ -277,6 +277,9 @@ export function useTasks() {
     return { error }
   }
 
+  // Accepts a SUBSET of tasks (e.g. one day column in the weekly timeline) and renumbers
+  // just those, merging into state. Replacing state wholesale would drop every task not
+  // passed in.
   async function reorderTasks(reorderedTasks) {
     const updates = reorderedTasks.map((task, index) =>
       supabase
@@ -286,7 +289,11 @@ export function useTasks() {
     )
 
     await Promise.all(updates)
-    setTasks(reorderedTasks.map((t, i) => ({ ...t, sort_order: i })))
+
+    const newOrder = new Map(reorderedTasks.map((t, i) => [t.id, i]))
+    setTasks(prev => prev.map(t =>
+      newOrder.has(t.id) ? { ...t, sort_order: newOrder.get(t.id) } : t
+    ))
   }
 
   // Monthly task: create an instance (copy) for the current month

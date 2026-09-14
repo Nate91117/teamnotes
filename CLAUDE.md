@@ -99,6 +99,17 @@ src/
 ### SQL Reference
 - `supabase-schema.sql` - Base schema reference (migration files removed after being applied)
 
+### Task Priority (This Week timeline)
+- Tasks in each `WeeklyTimeline` column are numbered 1, 2, 3 and drag-reorderable; order persists
+  to `tasks.sort_order` via `reorderTasks()`.
+- Ordering is per *group* within a column (Weekly / Monthly / Tasks), because group membership
+  comes from `is_weekly`/`is_monthly` — a task cannot be dragged between groups.
+- `reorderTasks()` accepts a SUBSET of tasks and merges the new order into state; it must not
+  replace state wholesale or every task outside the dragged column would vanish from the UI.
+- Sorting is `sort_order` then `created_at`. The tiebreak matters because sort_order is only
+  unique within a column, so a task that moves to a new day can collide with one already there.
+- Priority is drag-only by design — deliberately NOT a field in the TaskEditor modal.
+
 ### Monthly Tasks
 - Tasks with `is_monthly=true` and `monthly_source_id=null` are **templates**
 - Templates auto-create monthly **instances** (`monthly_source_id` points to template, `monthly_month` = 'YYYY-MM')
@@ -119,9 +130,10 @@ src/
   `WeeklyTimeline` titled "My To-Do List", rendered directly above the work "This Week".
 - daily-helper's to-dos live in Neon (server-only), so TeamNotes reads them via a bearer-token
   `GET /api/todos` endpoint on daily-helper. `useDailyTodos` fetches + maps them to the task shape.
-- `WeeklyTimeline` takes optional props `title`, `showMemberFilter`, `emptyText` so one component
-  serves both the work timeline (defaults) and the personal read-only view (no member filter,
-  no `onStatusChange`). Undated to-dos are hidden (timeline only buckets dated items).
+- `WeeklyTimeline` takes optional props `title`, `showMemberFilter`, `emptyText`, `onReorder` so one
+  component serves both the work timeline (defaults) and the personal read-only view (no member
+  filter, no `onStatusChange`, no `onReorder` so it stays unnumbered and undraggable). Undated
+  to-dos are hidden (timeline only buckets dated items).
 - Config via build-time env vars `VITE_TODOS_API_URL` + `VITE_TODOS_API_TOKEN` (GitHub Actions
   secrets; token must match daily-helper's `TEAMNOTES_TODOS_SECRET`). Unset URL → section hidden.
 

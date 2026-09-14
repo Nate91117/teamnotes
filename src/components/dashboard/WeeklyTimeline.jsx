@@ -72,10 +72,21 @@ function buildWeekColumns(tasks, hideCompleted) {
     }
   }
 
+  // Priority order within a column. created_at is the tiebreak so a task that moves to a
+  // new day (where its sort_order may collide) still lands somewhere deterministic.
+  const byPriority = (a, b) =>
+    (a.sort_order ?? 0) - (b.sort_order ?? 0) ||
+    new Date(a.created_at || 0) - new Date(b.created_at || 0)
+
+  overdue.tasks.sort(byPriority)
+  nextWeek.tasks.sort(byPriority)
+  later.tasks.sort(byPriority)
+  dayColumns.forEach(c => c.tasks.sort(byPriority))
+
   return { overdue, dayColumns, nextWeek, later }
 }
 
-function TaskItem({ task, showDate, onStatusChange }) {
+function TaskItem({ task, showDate, onStatusChange, rank = null, drag = null }) {
   const isDone = task.status === 'done'
   const [editing, setEditing] = useState(false)
   const ref = useRef(null)
@@ -107,13 +118,23 @@ function TaskItem({ task, showDate, onStatusChange }) {
     <div
       data-task-item
       ref={ref}
+      draggable={!!drag && !editing}
+      onDragStart={drag?.onDragStart}
+      onDragOver={drag?.onDragOver}
+      onDrop={drag?.onDragEnd}
+      onDragEnd={drag?.onDragEnd}
       onDoubleClick={onStatusChange ? () => setEditing(true) : undefined}
       title={onStatusChange && !editing ? 'Double-click to change status' : undefined}
-      className={`py-1 px-1.5 rounded select-none ${onStatusChange ? 'cursor-pointer' : ''} ${isDone && !editing ? 'opacity-50' : ''}`}
+      className={`py-1 px-1.5 rounded select-none ${onStatusChange ? 'cursor-pointer' : ''} ${isDone && !editing ? 'opacity-50' : ''} ${drag?.isDragging ? 'opacity-40' : ''}`}
     >
       <span className={`text-xs leading-tight ${
         isDone ? 'line-through text-gray-400 dark:text-gray-500' : 'text-gray-800 dark:text-gray-200'
       }`}>
+        {rank != null && (
+          <span className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 mr-1 tabular-nums">
+            {rank}.
+          </span>
+        )}
         {task.title}
         {dateLabel && (
           <span className="ml-1.5 text-[10px] text-gray-400 dark:text-gray-500 font-normal">{dateLabel}</span>
@@ -137,21 +158,72 @@ function TaskItem({ task, showDate, onStatusChange }) {
   )
 }
 
-function TaskGroup({ label, tasks, showDate, onStatusChange }) {
+// Numbered, drag-reorderable list. Without onReorder it renders a plain unnumbered list,
+// which is what the read-only "My To-Do List" timeline gets.
+function SortableTasks({ tasks, showDate, onStatusChange, onReorder }) {
+  const [items, setItems] = useState(tasks)
+  const [dragIndex, setDragIndex] = useState(null)
+
+  // Re-sync from props whenever we're not mid-drag (edits, refetches, realtime).
+  useEffect(() => {
+    if (dragIndex === null) setItems(tasks)
+  }, [tasks, dragIndex])
+
+  if (!onReorder) {
+    return tasks.map(task => (
+      <TaskItem key={task.id} task={task} showDate={showDate} onStatusChange={onStatusChange} />
+    ))
+  }
+
+  function handleDragOver(e, index) {
+    e.preventDefault()
+    if (dragIndex === null || dragIndex === index) return
+    setItems(prev => {
+      const next = [...prev]
+      const [moved] = next.splice(dragIndex, 1)
+      next.splice(index, 0, moved)
+      return next
+    })
+    setDragIndex(index)
+  }
+
+  async function handleDragEnd() {
+    const dropped = items
+    setDragIndex(null)
+    const changed = dropped.some((t, i) => t.id !== tasks[i]?.id)
+    if (changed) await onReorder(dropped)
+  }
+
+  return items.map((task, index) => (
+    <TaskItem
+      key={task.id}
+      task={task}
+      showDate={showDate}
+      onStatusChange={onStatusChange}
+      rank={index + 1}
+      drag={{
+        isDragging: dragIndex === index,
+        onDragStart: () => setDragIndex(index),
+        onDragOver: (e) => handleDragOver(e, index),
+        onDragEnd: handleDragEnd
+      }}
+    />
+  ))
+}
+
+function TaskGroup({ label, tasks, showDate, onStatusChange, onReorder }) {
   if (tasks.length === 0) return null
   return (
     <div>
       <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-0.5 px-1">
         {label}
       </p>
-      {tasks.map(task => (
-        <TaskItem key={task.id} task={task} showDate={showDate} onStatusChange={onStatusChange} />
-      ))}
+      <SortableTasks tasks={tasks} showDate={showDate} onStatusChange={onStatusChange} onReorder={onReorder} />
     </div>
   )
 }
 
-function Column({ col, isOverdue, isLater, listMaxHeight, hiddenCount, onStatusChange }) {
+function Column({ col, isOverdue, isLater, listMaxHeight, hiddenCount, onStatusChange, onReorder }) {
   const baseClasses = 'min-w-[150px] max-w-[200px] rounded-xl border p-3 flex flex-col relative'
   const colorClasses = col.isToday
     ? 'bg-primary-50 border-primary-300 dark:bg-primary-900/20 dark:border-primary-600'
@@ -196,12 +268,12 @@ function Column({ col, isOverdue, isLater, listMaxHeight, hiddenCount, onStatusC
         {col.tasks.length === 0 ? (
           <p className="text-xs text-gray-300 dark:text-gray-600 text-center py-1.5">—</p>
         ) : isLater ? (
-          col.tasks.map(task => <TaskItem key={task.id} task={task} showDate={false} onStatusChange={onStatusChange} />)
+          <SortableTasks tasks={col.tasks} showDate={false} onStatusChange={onStatusChange} onReorder={onReorder} />
         ) : (
           <>
-            <TaskGroup label="Weekly" tasks={weekly} showDate={isOverdue} onStatusChange={onStatusChange} />
-            <TaskGroup label="Monthly" tasks={monthly} showDate={isOverdue} onStatusChange={onStatusChange} />
-            <TaskGroup label="Tasks" tasks={normal} showDate={isOverdue} onStatusChange={onStatusChange} />
+            <TaskGroup label="Weekly" tasks={weekly} showDate={isOverdue} onStatusChange={onStatusChange} onReorder={onReorder} />
+            <TaskGroup label="Monthly" tasks={monthly} showDate={isOverdue} onStatusChange={onStatusChange} onReorder={onReorder} />
+            <TaskGroup label="Tasks" tasks={normal} showDate={isOverdue} onStatusChange={onStatusChange} onReorder={onReorder} />
           </>
         )}
       </div>
@@ -219,6 +291,7 @@ export default function WeeklyTimeline({
   monthlyInstances,
   loading,
   onStatusChange,
+  onReorder,
   title = 'This Week',
   showMemberFilter = true,
   emptyText = 'No tasks with due dates. Add due dates to tasks to see them here.',
@@ -343,16 +416,16 @@ export default function WeeklyTimeline({
           <div className="overflow-x-auto pb-1 -mx-1 px-1">
             <div ref={rowRef} className="flex gap-2.5" style={{ minWidth: 'max-content' }}>
               {overdue.tasks.length > 0 && (
-                <Column col={overdue} isOverdue onStatusChange={onStatusChange} />
+                <Column col={overdue} isOverdue onStatusChange={onStatusChange} onReorder={onReorder} />
               )}
               {dayColumns.map(col => (
-                <Column key={col.key} col={col} onStatusChange={onStatusChange} />
+                <Column key={col.key} col={col} onStatusChange={onStatusChange} onReorder={onReorder} />
               ))}
               {nextWeek.tasks.length > 0 && (
-                <Column col={nextWeek} onStatusChange={onStatusChange} />
+                <Column col={nextWeek} onStatusChange={onStatusChange} onReorder={onReorder} />
               )}
               {later.tasks.length > 0 && (
-                <Column col={later} isLater listMaxHeight={innerMax} hiddenCount={laterHidden} onStatusChange={onStatusChange} />
+                <Column col={later} isLater listMaxHeight={innerMax} hiddenCount={laterHidden} onStatusChange={onStatusChange} onReorder={onReorder} />
               )}
             </div>
           </div>
