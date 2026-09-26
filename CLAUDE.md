@@ -99,6 +99,16 @@ src/
 ### SQL Reference
 - `supabase-schema.sql` - Base schema reference (migration files removed after being applied)
 
+### This Week timeline window
+- Day columns start at **today** and run through **Friday** of the current work week, so
+  finished days drop off as the week goes on (Thursday shows Thu | Fri).
+- On Sat/Sun there is no work week left, so it rolls forward to next Mon–Fri.
+- Weekends are hidden unless a task is actually due that day, in which case that one day
+  appears as an extra column — nothing is ever silently dropped.
+- "Next Week" is the 7 days after the Sunday following that Friday; "Later" is beyond it.
+- A past-dated weekly task normally sits on its weekday column; if the week has already
+  moved past that weekday it falls through to Overdue rather than disappearing.
+
 ### Task Priority (This Week timeline)
 - Tasks in each `WeeklyTimeline` column are numbered 1, 2, 3 and drag-reorderable; order persists
   to `tasks.sort_order` via `reorderTasks()`.

@@ -22,22 +22,45 @@ function buildWeekColumns(tasks, hideCompleted) {
   const dayMs = 24 * 60 * 60 * 1000
   const todayDate = new Date(today + 'T12:00:00')
   const dayOfWeek = todayDate.getDay() // 0=Sun, 1=Mon...6=Sat
-  // Week starts on Sunday (matches the weekly-task engine's getCurrentWeek)
-  const weekStartDate = new Date(todayDate.getTime() - dayOfWeek * dayMs)
+  const fmt = d => d.toLocaleDateString('en-CA', { timeZone: 'UTC' })
 
   const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 
-  const dayColumns = DAY_NAMES.map((label, i) => {
-    const d = new Date(weekStartDate.getTime() + i * dayMs)
-    const dateStr = d.toLocaleDateString('en-CA', { timeZone: 'UTC' })
-    return { key: `day-${i}`, label, dateStr, isToday: dateStr === today, tasks: [] }
-  })
+  // The board starts at today and runs to Friday of the current work week, so past days
+  // drop off as the week goes on. On a weekend there is no work week left, so roll
+  // forward to next Monday–Friday.
+  let lastWeekday
+  if (dayOfWeek === 0) {        // Sunday  -> Mon..Fri of the coming week
+    lastWeekday = new Date(todayDate.getTime() + 5 * dayMs)
+  } else if (dayOfWeek === 6) { // Saturday -> Mon..Fri of the coming week
+    lastWeekday = new Date(todayDate.getTime() + 6 * dayMs)
+  } else {                      // Mon–Fri -> today..Friday
+    lastWeekday = new Date(todayDate.getTime() + (5 - dayOfWeek) * dayMs)
+  }
 
-  const lastStr = dayColumns[6].dateStr // Saturday
-  const nextWeekStartDate = new Date(weekStartDate.getTime() + 7 * dayMs)
-  const nextWeekEndDate = new Date(weekStartDate.getTime() + 13 * dayMs)
-  const nextWeekStartStr = nextWeekStartDate.toLocaleDateString('en-CA', { timeZone: 'UTC' })
-  const nextWeekEndStr = nextWeekEndDate.toLocaleDateString('en-CA', { timeZone: 'UTC' })
+  // Candidates run through the Sunday after that Friday so a weekend-dated task still has
+  // somewhere to land; weekend columns are dropped below unless they actually hold tasks.
+  const rangeEnd = new Date(lastWeekday.getTime() + 2 * dayMs)
+  const rangeEndStr = fmt(rangeEnd)
+
+  const dayColumns = []
+  for (let t = todayDate.getTime(); t <= rangeEnd.getTime(); t += dayMs) {
+    const d = new Date(t)
+    const dateStr = fmt(d)
+    const wd = d.getDay()
+    dayColumns.push({
+      key: `day-${dateStr}`,
+      label: DAY_NAMES[wd],
+      dateStr,
+      wd,
+      isWeekend: wd === 0 || wd === 6,
+      isToday: dateStr === today,
+      tasks: []
+    })
+  }
+
+  const nextWeekStartStr = fmt(new Date(rangeEnd.getTime() + dayMs))
+  const nextWeekEndStr = fmt(new Date(rangeEnd.getTime() + 7 * dayMs))
 
   const overdue = { key: 'overdue', label: 'Overdue', tasks: [] }
   const nextWeek = { key: 'next-week', label: 'Next Week', tasks: [] }
@@ -55,14 +78,14 @@ function buildWeekColumns(tasks, hideCompleted) {
 
     if (taskDateStr < today) {
       const isWeekly = task.is_weekly || task.weekly_source_id
-      if (isWeekly) {
-        // Weekly tasks always live on their weekday — never overdue
-        const taskDow = new Date(taskDateStr + 'T12:00:00').getDay() // 0=Sun…6=Sat
-        dayColumns[taskDow].tasks.push(task)                         // columns are Sun…Sat
-      } else {
-        overdue.tasks.push(task)
-      }
-    } else if (taskDateStr <= lastStr) {
+      const taskDow = new Date(taskDateStr + 'T12:00:00').getDay()
+      // Weekly tasks live on their weekday rather than going overdue — but only if that
+      // weekday is still on the board. If the week has already moved past it, fall through
+      // to Overdue so it is never silently dropped.
+      const col = isWeekly ? dayColumns.find(c => c.wd === taskDow) : null
+      if (col) col.tasks.push(task)
+      else overdue.tasks.push(task)
+    } else if (taskDateStr <= rangeEndStr) {
       const col = dayColumns.find(c => c.dateStr === taskDateStr)
       if (col) col.tasks.push(task)
     } else if (taskDateStr >= nextWeekStartStr && taskDateStr <= nextWeekEndStr) {
@@ -83,7 +106,9 @@ function buildWeekColumns(tasks, hideCompleted) {
   later.tasks.sort(byPriority)
   dayColumns.forEach(c => c.tasks.sort(byPriority))
 
-  return { overdue, dayColumns, nextWeek, later }
+  const visibleDays = dayColumns.filter(c => !c.isWeekend || c.tasks.length > 0)
+
+  return { overdue, dayColumns: visibleDays, nextWeek, later }
 }
 
 function TaskItem({ task, showDate, onStatusChange, rank = null, drag = null }) {
